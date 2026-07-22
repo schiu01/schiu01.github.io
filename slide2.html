@@ -1,0 +1,56 @@
+
+<body>
+
+    <div>
+    <h3>
+Which regions are represented the most, for world-cup quality players?
+</h3>
+
+<form>
+    <div style="border: 1px solid #AAAAAA; background-color: #EEEEEE; border-radius: 10px; padding: 10px; margin: 10px; ">
+Select Region:
+    <div style="display: flex; "">
+        <button style="padding: 10px; border-radius: 5px; background-color: white; margin: 5px" onclick="return filter_chart_by_region('North America')" >North America</button>
+        <div id="stat_North_America" style="align-content: center;"></div>
+    </div>
+    <div style="display: flex">
+        <button style="padding: 10px; border-radius: 5px; background-color: white; margin: 5px" onclick="return filter_chart_by_region('South America')">South America</button>
+        <div id="stat_South_America" style="align-content: center;"></div>
+    </div>
+    <div style="display: flex">
+        <button style="padding: 10px; border-radius: 5px; background-color: white; margin: 5px" onclick="return filter_chart_by_region('Europe');">Europe</button>
+        <div id="stat_Europe" style="align-content: center;"></div>        
+    </div>
+    <div style="display: flex">
+        <button style="padding: 10px; border-radius: 5px; background-color: white; margin: 5px" onclick="return filter_chart_by_region('Asia');">Asia</button>
+        <div id="stat_Asia" style="align-content: center;"></div>        
+    </div>
+    <div style="display: flex">
+        <button style="padding: 10px; border-radius: 5px; background-color: white; margin: 5px" onclick="return filter_chart_by_region('Africa');">Africa</button>
+        <div id="stat_Africa" style="align-content: center;"></div>        
+    </div>
+    <div style="display: flex">
+        <button style="padding: 10px; border-radius: 5px; background-color: white; margin: 5px" onclick="return filter_chart_by_region('Oceania');">Oceania</button>
+        <div id="stat_Oceania" style="align-content: center;"></div>        
+    </div>
+    <div style="display: flex">
+        <button style="padding: 10px; border-radius: 5px; background-color: white; margin: 5px" onclick="return filter_chart_by_region('All Regions');">All Regions</button>
+        <div id="stat_All_Regions" style="align-content: center;"></div>        
+    </div>
+    
+
+
+    
+</form>
+    
+
+
+    </div>
+<div id="narrative_blurb" style="margin: 10px; padding: 5px; border-top: 1px solid #888888 ; border-bottom: 1px solid #888888;">Click on the Region above...</div>
+<div><UL>
+    <LI>Hover your mouse over club name to show # of players from the club.</LI>
+    <LI>Click on the club name to show the countries that the players represent in the World Cup</LI>
+    <LI>Click on Country Name to show players (per line) belonging to which professional club</LI>
+</UL></div>
+
+</body>

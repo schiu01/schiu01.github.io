@@ -68,15 +68,94 @@
     var map_clubs = new Map()
     var max_players_in_club =  0;
     var club_member_count_threshold = 5;
-    var top_teams_count = 55;
+    var top_teams_count = 25;
     var top_players_info = new Map(); // holds top 
     var num_of_top_players_visible = 20;
+    var tournament_total_players = 1248 // pre count
+    var tournament_total_clubs = 450 ; // precount
 
     // Previous states is an array of hashmap
     // the hashmap carries type of element - eg. circle, line
     // hash map carries the attributes of those elements
     var previous_states = [] ;
     var highlighting_active = false ; // clicking on the circles activates this to highlight certain information.
+
+
+    // Define federation colors and names - using pastel colors for better visibility
+    // These values are static as there are only these soccer federations in the word.
+    var federation_colors = {
+        "AFC": "#E0d4e7", // Purple
+        "CAF": "#F49595", // Red
+        "CONCACAF": "#A9e4de", // Green
+        "CONMEBOL": "#f3d17c", // Orange
+        "OFC": "#d3d6ce",  // Brown
+        "UEFA": "#b0b5ed" // Blue        
+        
+    };
+    var federation_names = {
+        "UEFA": "Europe",
+        "CONMEBOL": "South America",
+        "CONCACAF": "North & Central America",
+        "CAF": "Africa",
+        "AFC": "Asia",
+        "OFC": "Oceania"
+    };
+
+
+
+    // Positioning of elements:
+    var legend_x = 30;
+    var legend_y = 40; // y position of legend values
+    var legend_circle_radius = 10 ;
+    var legend_spacing = 10 ;
+    var bubble_canvas_start_y = legend_y + 20 ;
+
+    var legendCanvas = d3.select("#legend")
+        .attr("width",legend_width)
+        .attr("height", legend_height)
+        .append("g")
+        .attr("transform", "translate(0, 0)");
+    
+    // federation legend
+    
+    var legend = legendCanvas.selectAll("g")
+        .data(Object.keys(federation_colors))
+        .enter()
+        .append("g")
+        .attr("transform", "translate(0, 0)");     
+    legend.append("rect")
+        .attr("x", function(d, i) { return legend_x; })
+        .attr("y", function(d, i) { return legend_y + (i * (legend_circle_radius * 2 + legend_spacing))  - legend_spacing; })
+        .attr("width", 2*legend_circle_radius)
+        .attr("height", 20)
+        .attr("alignment-baseline", "middle")
+        .attr("fill", function(d) { return federation_colors[d]; });
+    legend.append("text")
+        .attr("x", function(d, i) { return legend_x + legend_spacing +  (legend_circle_radius * 2) })
+        .attr("y", function(d, i) { return legend_y + (i * (legend_circle_radius * 2 + legend_spacing)) ; })
+        .text(function(d) { return federation_names[d] + " (" + d + ")"; })
+        .attr("alignment-baseline", "middle")
+        .style("font-size", "12px")
+        .style("font-family", "Arial")
+        .style("font-weight", "bold");
+    legend.append("text")
+        .attr("x",legend_x)
+        .attr("y", 20)
+        .text("World Soccer Federations")
+        .style("font-size", "12px")
+        .style("font-family", "Arial")
+        .style("font-weight", "bold");
+    var tooltip = d3.select("#tooltip")
+        .append("div").raise()
+        .style("position", "absolute")
+        .style("visibility", "hidden")
+        .style("background-color", "white")
+        .style("font-family","Arial")
+        .style("font-size","12px")
+        .style("border", "solid")
+        .style("border-width", "1px")
+        .style("border-radius", "5px")
+        .style("padding", "10px")
 
     // Graph canvas is the main outer canvas 
     var graphCanvas = d3.select("#graphCanvas")
@@ -256,556 +335,640 @@
    
 
     }
-    // Define federation colors and names - using pastel colors for better visibility
-    // These values are static as there are only these soccer federations in the word.
-    var federation_colors = {
-        "AFC": "#E0d4e7", // Purple
-        "CAF": "#F49595", // Red
-        "CONCACAF": "#A9e4de", // Green
-        "CONMEBOL": "#f3d17c", // Orange
-        "OFC": "#d3d6ce",  // Brown
-        "UEFA": "#b0b5ed" // Blue        
-        
-    };
-    var federation_names = {
-        "UEFA": "Europe",
-        "CONMEBOL": "South America",
-        "CONCACAF": "North & Central America",
-        "CAF": "Africa",
-        "AFC": "Asia",
-        "OFC": "Oceania"
-    };
 
 
+    function filter_chart_by_region(region_name) {
+        draw_bubble_chart({"mode": "filter_by_region", "region_name": region_name,"show_all_clubs": true})
+        return false;
 
-    // Positioning of elements:
-    var legend_x = 30;
-    var legend_y = 40; // y position of legend values
-    var legend_circle_radius = 10 ;
-    var legend_spacing = 10 ;
-    var bubble_canvas_start_y = legend_y + 20 ;
-
-    var legendCanvas = d3.select("#legend")
-        .attr("width",legend_width)
-        .attr("height", legend_height)
-        .append("g")
-        .attr("transform", "translate(0, 0)");
-    
-    // federation legend
-    
-    var legend = legendCanvas.selectAll("g")
-        .data(Object.keys(federation_colors))
-        .enter()
-        .append("g")
-        .attr("transform", "translate(0, 0)");     
-    legend.append("rect")
-        .attr("x", function(d, i) { return legend_x; })
-        .attr("y", function(d, i) { return legend_y + (i * (legend_circle_radius * 2 + legend_spacing))  - legend_spacing; })
-        .attr("width", 2*legend_circle_radius)
-        .attr("height", 20)
-        .attr("alignment-baseline", "middle")
-        .attr("fill", function(d) { return federation_colors[d]; });
-    legend.append("text")
-        .attr("x", function(d, i) { return legend_x + legend_spacing +  (legend_circle_radius * 2) })
-        .attr("y", function(d, i) { return legend_y + (i * (legend_circle_radius * 2 + legend_spacing)) ; })
-        .text(function(d) { return federation_names[d] + " (" + d + ")"; })
-        .attr("alignment-baseline", "middle")
-        .style("font-size", "12px")
-        .style("font-family", "Arial")
-        .style("font-weight", "bold");
-    legend.append("text")
-        .attr("x",legend_x)
-        .attr("y", 20)
-        .text("World Soccer Federations")
-        .style("font-size", "12px")
-        .style("font-family", "Arial")
-        .style("font-weight", "bold");
-    var tooltip = d3.select("#tooltip")
-        .append("div").raise()
-        .style("position", "absolute")
-        .style("visibility", "hidden")
-        .style("background-color", "white")
-        .style("font-family","Arial")
-        .style("font-size","12px")
-        .style("border", "solid")
-        .style("border-width", "1px")
-        .style("border-radius", "5px")
-        .style("padding", "10px")
+    }
 
     // paint the teams around the outer circle.
-    var wc_teams = d3.csv("WorldCupTeams.csv").then(function(data) {
 
+    function draw_worldcup_teams() {
+        graphCanvas.exit().remove()
+        var wc_teams = d3.csv("WorldCupTeams.csv").then(function(data) {
 
-        var total_teams = data.length;
-        var angle_per_team = 2 * Math.PI / total_teams;
+            var total_teams = data.length;
+            var angle_per_team = 2 * Math.PI / total_teams;
 
-        // Draw Teams on top and bottom of rectangle area.
+            // Draw Teams on top and bottom of rectangle area.
 
-        var top_team_canvas = graphCanvas.append("g")
-            .attr("transform", "translate(0, 0)");
-        
-
-
-        var teams_canvas = top_team_canvas.selectAll("g")
-            .data(data)
-            .enter()
-            .append("g")
-            .attr("transform", function(d,i) { 
-                var x;
-                var y;
-                x = canvas_width / 2 + outer_circle_radius * Math.cos(i * angle_per_team)
-                y = canvas_height / 2 + outer_circle_radius * Math.sin(i * angle_per_team)
-                teams_map.set(d.fifa_code, {x: x, y: y, team_name: d.team_name, confederation: d.confederation});
-                return "translate(" + x + "," + y + ")";
-
-            })
-            .attr("fifa_code", d => d.fifa_code)
+            var top_team_canvas = graphCanvas.append("g")
+                .attr("transform", "translate(0, 0)");
             
 
 
-
-            teams_canvas.append("rect")
-                .attr("x",Math.floor(-team_rect_length/1.5))
-                .attr("y",Math.floor(-team_rect_length/1.5))
-                .attr("width", 1.5*team_rect_length)
-                .attr("height", 1.5 * team_rect_length)
-                .attr("fill", function(d) { return federation_colors[d.confederation]; })
-                .attr("stroke", "black")
-                .attr("stroke-width", 1).attr("stroke-opacity", 0.8)
-                .attr("alignment-baseline", "middle")
-                .attr("id", function(d) { return "team_" + d.fifa_code; })
-                .attr("rx",5)
-                .attr("ry",5)
-                ;
-            
-            // Stroke is to create the white border
-            // and we'll super impose the text next so the text is clearer to the end user
-            teams_canvas.append("text")
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "middle")
-            .style("font-size", "14px")
-            .style("font-family", "Arial")
-            .style("font-weight", "bold")
-            .attr("stroke", "white")
-            .attr("stroke-width", 2).attr("stroke-opacity", 0.8)
-            .text(function(d,i) { return d.fifa_code; }).raise();
-
-            teams_canvas.append("text")
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "middle")
-            .style("fill", "black")
-            .style("font-size", "14px")
-            .style("font-family", "Arial")
-            .style("font-weight", "bold")
-            .text(function(d,i) { return d.fifa_code; })
-
-            teams_canvas.on("mouseover", function(event, d) {
-                d3.select(this).style("cursor", "pointer");                
-                // d3.select(this).raise().select("circle").attr("fill", "orange")
-                //     .transition()
-                //     .duration(300)
-                //     .attr("r", team_rect_length + 20)
-                d3.select(this).select("text")
-                    .style("fill", "black")
-                    .attr("stroke-width", 2).attr("stroke-opacity", 0.8)
-                    .text(function(d,i) { return d.team_name; }).raise();
-                d3.select(this).select("text")
-                    .style("fill", "black")
-                    .text(function(d,i) { return d.team_name; }).raise();
-                
-            })
-            teams_canvas.on("mouseout", function(event, d) {
-                d3.select(this).style("cursor", "default");   
-                d3.select(this).select("circle")
-                    .attr("fill", function(d) { return federation_colors[d.confederation]; })
-
-                d3.select(this).select("text")
-                    .style("fill", "black")
-                    .attr("stroke-width", 2).attr("stroke-opacity", 0.8)
-                    .text(function(d,i) { return d.fifa_code; }).raise();
-
-                d3.select(this).select("text")
-                    .style("fill", "black")
-                    .text(function(d,i) { return d.fifa_code; }).raise();
-                
-            })
-            .on("click", function(event, d) { highlight_lines_clubs(undefined, d.fifa_code) })
-
-
-
-    });    
-
-    var wc_data = d3.csv("WorldCupPlayerStats.csv").then(function(data) {
-
-        // 1. Create 2 Hash Maps
-        // - First Hash Map = Key of Fifa Country Code, and value is a List of All Players for that country and their assigned club. Nice to have - goals.
-        // - Second Hash Map - Key of Clubb Names, value is list of all players for that club and their assigned country.
-        // Above will assist in easy access to values.
-
-        // Sort data by top goal scorers so we can capture the names and annotate them later
-        data.sort((a,b) => b.player_stats_goals - a.player_stats_goals).forEach(function(d,i) {
-            if(i <= num_of_top_players_visible) {
-                top_players_info.set(d.player_id, d)
-            }
-            if(map_fifa_country.has(d.teams_fifa_code)) {
-                map_fifa_country.get(d.teams_fifa_code).push({"player_name": d.player_name, "club_team": d.club_team, "player_value": d.market_value_eur * 1.2})
-            } else {
-                var player_values = [{"player_name": d.player_name, "club_team": d.club_team, "player_value": d.market_value_eur * 1.2}]
-                map_fifa_country.set(d.teams_fifa_code, player_values)
-            }
-
-            if(map_clubs.has(d.club_team)) {
-                map_clubs.get(d.club_team).push({"player_name": d.player_name, "fifa_code": d.teams_fifa_code, "player_value": d.market_value_eur * 1.2, "club_region": d.club_region, "club_country_name": d.club_country_name})
-
-            } else {
-                map_clubs.set(d.club_team, [{"player_name": d.player_name, "fifa_code": d.teams_fifa_code, "player_value": d.market_value_eur * 1.2, "club_region": d.club_region, "club_country_name": d.club_country_name}])
-
-
-            }
-            
-        });
-        
-        //var filtered_clubs = map_clubs.entries().filter(([club_team, players]) => players.length > club_member_count_threshold);
-        var filtered_clubs = new Map([...map_clubs.entries()].sort((a,b) => b[1].length - a[1].length ).slice(0,top_teams_count));
-        // console.log(filtered_clubs)
-        
-        min_players = filtered_clubs.entries().toArray()[top_teams_count-1][1].length
-        max_players_in_club = filtered_clubs.entries().toArray()[0][1].length
-
-
-        // Bubble sizes
-        // The range should be proportionate to size of the big circle
-        // 
-        var outer_circle_radius_scale = d3.scaleSqrt()
-            .domain([Math.ceil(min_players/2), max_players_in_club])
-            .range([1, outer_circle_radius/7]); // Adjust the range for desired circle sizes
-
-        const colorScale = d3.scaleSequential()
-        .domain([Math.ceil(min_players/2), max_players_in_club]) // Your data's min and max values
-        .interpolator(d3.interpolateRgb("lightgray", "darkgreen"));
-
-        // Club's country scale (ordinal)
-        var club_regions = ["North America","South America", "Europe","Asia","Africa","Oceania"];
-        const schemeColors = [d3.schemeCategory10];        
-
-       const club_cntry_color_scale = d3.scaleOrdinal(d3.schemeCategory10)
-        .domain(club_regions);
-        // Update Legend
-        var legend_club_regions_canvas = legendCanvas.append("g")
-        legend_club_regions = legend_club_regions_canvas.selectAll("g")
-                .data(club_regions)
+            var teams_canvas = top_team_canvas.selectAll("g")
+                .data(data)
                 .enter()
                 .append("g")
-                .attr("transform", "translate(0,0)")
-                .attr("d1", (d,i) => { console.log(i)});
-         var legend_rect_canvas =  legend_club_regions_canvas.append("rect")
-                .attr("width",legend_width-10)
-                .attr("height",(2*legend_circle_radius + legend_spacing) * 16)
-                .attr("stroke","#DDDDDD")
-                .attr("stroke-width",1)
-                .attr("fill","lightgray")
-                .attr("fill-opacity","0.1")
-                .attr("x", 10)
-                .attr("y", 200 + legend_y)
-                .attr("rx",10)
-                .attr("ry",10)
-                .lower()
-            legend_club_regions_canvas
-            .append("text")
-            .attr("fill", "black")
-            .attr("x",legend_width / 2)
-            .attr("y",legend_y + 200)
-            .attr("text-anchor", "middle")
-            .style("font-size", "14px")
-            .style("font-family", "Arial")
-            .style("font-weight", "bold")
-            .attr("alignment-baseline", "middle")
-            .text("Soccer Club Location")
+                .attr("transform", function(d,i) { 
+                    var x;
+                    var y;
+                    x = canvas_width / 2 + outer_circle_radius * Math.cos(i * angle_per_team)
+                    y = canvas_height / 2 + outer_circle_radius * Math.sin(i * angle_per_team)
+                    teams_map.set(d.fifa_code, {x: x, y: y, team_name: d.team_name, confederation: d.confederation});
+                    return "translate(" + x + "," + y + ")";
 
-            legend_club_regions
-                .append("circle")
-                .attr("r","10")
-                .attr("fill", d =>  club_cntry_color_scale(d))
-                .attr("cx", (d,i) => (i > 12) ? legend_x + 150 : legend_x)
-                .attr("cy", (d, i) => { 
-                    if(i > 12) {
-                        return 250 + legend_y + ((i-13) * (legend_circle_radius * 2 + legend_spacing)) ; 
-                    } else {
-                        return 250 + legend_y + (i * (legend_circle_radius * 2 + legend_spacing)) ; 
-                    }
-                }
-                )
-
-            legend_club_regions
-            .append("text")
-            .attr("fill", "black")
-            .attr("text-anchor", "left")
-            .attr("alignment-baseline", "middle")
-            .style("font-size", "12px")
-            .style("font-family", "Arial")
-            .style("font-weight", "bold")
-            .attr("x", (d,i) => (i > 12) ? legend_x + 165 : legend_x + 15)
-            .attr("y", (d, i) => {if(i > 12) {
-                        return 250 + legend_y + ((i-13) * (legend_circle_radius * 2 + legend_spacing)) ; 
-                    } else {
-                        return 250 + legend_y + (i * (legend_circle_radius * 2 + legend_spacing)) ; 
-                    }
-                }
-            )
-            .text(d => d)
-            .raise()
+                })
+                .attr("fifa_code", d => d.fifa_code)
                 
-                
-        
-
-        var club_team_data_nodes_tmp =  filtered_clubs.entries().map(([club_team, players]) => ({
-            radius: outer_circle_radius_scale(players.length), // Use the scaling function for consistent sizing
-            x: Math.random() * canvas_width-200,
-            y: Math.random() * (canvas_height - 100) ,
-            players: players,
-            club_team: club_team
-        }));
-        //var club_team_data_nodes = club_team_data_nodes_tmp.toArray(); // iterator to array
-        var club_team_data_nodes = club_team_data_nodes_tmp.toArray(); // iterator to array
-        var clubnames = club_team_data_nodes.map(d => d.club_team)
-        
-        players = data.filter(d =>  clubnames.includes(d.club_team))
-        
-        
-
-        var  circles = bubblechartCanvas.selectAll("g")
-                        .attr("club_team", d => d.club_team)
-                        .data(club_team_data_nodes).enter()
-                        .append("g")
-                        .attr("transform", "translate(" + canvas_width/2 + "," + canvas_height/2 +")")
-                        .attr("alignment-baseline", "middle");
-
-                        
-
-        
-        circles
-            .append("circle")
-            .attr("club_team",d => d.club_team)
-            //.attr("fill", d => {return (d.players.length < 5) ? "gray" : colorScale(d.players.length)})
-            .attr("fill", d => { return club_cntry_color_scale(d.players[0].club_region)})
-            .attr("stroke", "black")
-            .attr("stroke-width", 1)
-
-            .attr("r", d =>  { return (d.players.length <= 5) ? "1" : d.radius})
-            .raise()
-            .on("mouseover", function(event,d) {
-                d3.select(this).style("cursor", "pointer");                
-
-                d3.select(this)
-                .transition()
-                .duration(200)
-                .attr("r", d=> d.radius + 15);
-                var tooltip_text = "<div style='display: table; border: 1px solid #CCCCCC; border-radius: 5px;'>"
-                    tooltip_text += "<div style='display: table-row; padding: 10px;'>"
-                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Club Name</b>: </div>"
-                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.club_team + "</div></div>"
-                    tooltip_text += "<div style='display: table-row; padding: 10px;'>"
-                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Location</b>: </div>"
-                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.players[0].club_country_name + "</div></div>"
-                    tooltip_text += "<div style='display: table-row'>"
-                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Player Representation</b>: </div>"
-                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.players.length + "</div></div>"
-                    tooltip_text += "</div>"
-                tooltip
-                    .style("visibility","visible")
-                    .style("top", (event.offsetY-30)+"px").style("left",(event.offsetX+30)+"px")
-                    .html(tooltip_text)
-            
-            })
-
-            .on("mouseout", function(event,d) {
-                d3.select(this).style("cursor", "default");                
-
-                d3.select(this)
-                .transition()
-                .duration(200)
-                .attr("r", d=> d.radius )
-                tooltip
-                    .style("visibility","hidden")
-
-            })
-            .on("click", function(event, d) {
-                            highlight_lines_clubs(d.club_team, undefined)
-                        })
-                                    
-            
-
-                
-        
-        var lines = bubblechartCanvas.selectAll("line")
-            .data(players)
-            .enter()
-            .append("line")
-            .attr("stroke", "gray")
-            .attr("opacity","0.1")
-            .attr("stroke-width", "1")
-            .attr("fifa_code", d=>d.teams_fifa_code)
-            .attr("club_team", d => d.club_team)
-;
-
-        var club_texts = circles
-            .append("text")
-            .style("fill","black")
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "middle")
-            .style("fill", "black")
-            .style("font-size", "10px")
-            .style("font-family", "Arial")
-            .style("font-weight", "bold")
-            .attr("club_team", d => d.club_team)
-            .text(d =>  d.club_team)
 
 
 
-        var players_circles = playerCanvas.selectAll("g")
-                        .data(top_players_info)
-                        .enter()
-                        .append("g")
-                        .attr("transform","translate(100,100)")
-                        .attr("club_team", d => d[1].club_team)
-                        .attr("fifa_code", d => d[1].teams_fifa_code)
-                        .on("mouseover", function(event,d) {
-                            var tooltip_text = "<table border=1 cellpadding=5 cellspacing=0><tr><td colspan=2><b>" + d[1].player_name + "</b></td></tr>"
-                                tooltip_text += "<tr><td>Country</td><td>" + d[1].team_name + " ( " + d[1].teams_fifa_code+" )</td></tr>"
-                                tooltip_text += "<tr><td>Club</td><td>" + d[1].club_team + "</td></tr>"
-                                tooltip_text += "<tr><td>Goals</td><td>" + d[1].player_stats_goals + "</td></tr>"
-                                tooltip_text += "<tr><td>Assists</td><td>" + d[1].player_stats_assists + "</td></tr>"
-                                tooltip_text += "</table>"
-                            tooltip
-                                .style("visibility","visible")
-                                .style("top", (event.offsetY-30)+"px").style("left",(event.offsetX+10)+"px")
-                                .html(tooltip_text)
-
-
-                        })
-                        .on("mouseout", function(event,d) {
-                            tooltip
-                                .style("visibility","hidden")
-
-                        })
-                        //.style("visibility", "hidden")
-;
-            players_circles
-                        .append("circle")
-                        .attr("r","10")
-                        .attr("fill","lightgray")
-            players_circles
-                    .append("text")
-                    .attr("fill","black")
-                    .attr("text-anchor", "middle")
+                teams_canvas.append("rect")
+                    .attr("x",Math.floor(-team_rect_length/1.5))
+                    .attr("y",Math.floor(-team_rect_length/1.5))
+                    .attr("width", 1.5*team_rect_length)
+                    .attr("height", 1.5 * team_rect_length)
+                    .attr("fill", function(d) { return federation_colors[d.confederation]; })
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 1).attr("stroke-opacity", 0.8)
                     .attr("alignment-baseline", "middle")
-                    .style("fill", "black")
-                    .style("font-size", "10px")
-                    .style("font-family", "Arial")
-                    .style("font-weight", "bold")
-                    .text(d=> { 
-                        // player names can be large so split by space and only show last name
-                        var player_name_attribute = d[1].player_name.split(" ")
-                        return player_name_attribute[player_name_attribute.length - 1];
-                    
-                    })
-
-        const simulation = d3.forceSimulation(club_team_data_nodes)
-            .force("charge", d3.forceManyBody().strength(-25))
-            .force("collision", d3.forceCollide().radius(d => d.radius + 10).strength(0.1))
-            .force("radial", d3.forceRadial(outer_circle_radius - (team_rect_length * 2), canvas_width/2, canvas_height/2).strength(0.004)) // Bounds the nodes
-            .force("x", d3.forceX(canvas_width/2).strength(d => d.radius * 0.003))
-            .force("y", d3.forceY(canvas_height/2).strength( d => d.radius * 0.003))
-            .on("tick", () => {
-                // move the circles as per the forces applied to x,y
-                circles
-                    .attr("transform", d =>  "translate(" + Math.max(d.radius, Math.min(canvas_width - d.radius, d.x))+ "," + Math.max(d.radius, Math.min(canvas_height - d.radius, d.y)) +")");
-                // move the lines along with the circles.
-                lines
-                .attr("x1", d => {
-                    var club_node = teams_map.get(d.teams_fifa_code);
-                    return club_node ? club_node.x : 0;
-                })
-                .attr("y1", d => {
-                    var club_node = teams_map.get(d.teams_fifa_code);
-                    return club_node ? club_node.y : 0;
-                })
-                .attr("x2", d => {
-                    
-                    var team_node = club_team_data_nodes.find(node => node.club_team === d.club_team);
-                    return team_node.x ;
-                })
-                .attr("y2", d => {
-                    var team_node = club_team_data_nodes.find(node => node.club_team === d.club_team);
-                    return team_node.y 
-                });
-            players_circles
-            .attr("transform", d => {
+                    .attr("id", function(d) { return "team_" + d.fifa_code; })
+                    .attr("rx",5)
+                    .attr("ry",5)
+                    ;
                 
-                    var club_node = teams_map.get(d[1].teams_fifa_code);
-                    var team_node = club_team_data_nodes.find(node => node.club_team == d[1].club_team);
+                // Stroke is to create the white border
+                // and we'll super impose the text next so the text is clearer to the end user
+                teams_canvas.append("text")
+                .attr("text-anchor", "middle")
+                .attr("alignment-baseline", "middle")
+                .style("font-size", "14px")
+                .style("font-family", "Arial")
+                .style("font-weight", "bold")
+                .attr("stroke", "white")
+                .attr("stroke-width", 2).attr("stroke-opacity", 0.8)
+                .text(function(d,i) { return d.fifa_code; }).raise();
+
+                teams_canvas.append("text")
+                .attr("text-anchor", "middle")
+                .attr("alignment-baseline", "middle")
+                .style("fill", "black")
+                .style("font-size", "14px")
+                .style("font-family", "Arial")
+                .style("font-weight", "bold")
+                .text(function(d,i) { return d.fifa_code; })
+
+                teams_canvas.on("mouseover", function(event, d) {
+                    d3.select(this).style("cursor", "pointer");                
+                    // d3.select(this).raise().select("circle").attr("fill", "orange")
+                    //     .transition()
+                    //     .duration(300)
+                    //     .attr("r", team_rect_length + 20)
+                    d3.select(this).select("text")
+                        .style("fill", "black")
+                        .attr("stroke-width", 2).attr("stroke-opacity", 0.8)
+                        .text(function(d,i) { return d.team_name; }).raise();
+                    d3.select(this).select("text")
+                        .style("fill", "black")
+                        .text(function(d,i) { return d.team_name; }).raise();
                     
-                    if(team_node != undefined) {
-                        
-                        var interpolateX = d3.interpolateNumber(club_node.x, team_node.x);
-                        var interpolateY = d3.interpolateNumber(club_node.y, team_node.y);
-                        var new_x = interpolateX(0.2)
-                        var new_y = interpolateY(0.2)
-                        //console.log(d[1].player_name + " (" + new_x + "," + new_y +")")
-                        return "translate("+new_x+"," + new_y +")"
+                })
+                teams_canvas.on("mouseout", function(event, d) {
+                    d3.select(this).style("cursor", "default");   
+                    d3.select(this).select("circle")
+                        .attr("fill", function(d) { return federation_colors[d.confederation]; })
 
-                    }
+                    d3.select(this).select("text")
+                        .style("fill", "black")
+                        .attr("stroke-width", 2).attr("stroke-opacity", 0.8)
+                        .text(function(d,i) { return d.fifa_code; }).raise();
+
+                    d3.select(this).select("text")
+                        .style("fill", "black")
+                        .text(function(d,i) { return d.fifa_code; }).raise();
+                    
+                })
+                .on("click", function(event, d) { highlight_lines_clubs(undefined, d.fifa_code) })
+
+
+
+        });    
+    }
+
+    function filter_by_mode(mode, data_tmp) {
+        var return_data = [];
+        if(mode['mode'] == "filter_by_region" && mode['region_name'] != 'All Regions') {
+            //console.log(mode)
+            if(mode['show_all_clubs']) { top_teams_count = 100;}
+            
+            data_tmp.forEach((d,i) => {
+                if(d.club_region == mode['region_name']) {
+                    return_data.push(d)
+                }
             })
+        } else {
+            return_data = data_tmp
+        }
 
+        //console.log(return_data)
+        return return_data
+
+    }
+    
+    
+    var regional_narratives = {
+        "stat_North_America": "{total_clubs} North American clubs (Major League Soccer and other Central American Leagues) with {total_players} players represented {total_percentage}% of total players in the World Cup.",
+        "stat_South_America": "{total_clubs} South American clubs with {total_players} players represented {total_percentage}%. Surprisingly lower than North America's representation. Considering South America is one of Hot-Spots for Soccer",
+        "stat_Europe": "Europe has a staggering {total_clubs} club representation with {total_players} players representing {total_percentage}% of total players. Almost every nation has players from a European club, that may indicate the quality of the clubs in terms of competition, training and its facilities.",
+        "stat_Asia": "Surprisingly Asia has {total_clubs} clubs represented with {total_players} players. Asia is a very distant 2nd from Europe.",
+        "stat_Africa": "{total_clubs} African clubs with {total_players} players; representing {total_percentage}%.",
+        "stat_Oceania": "{total_clubs} Oceanian clubs with {total_players} players; representing {total_percentage}%; Mostly providing players to New Zealand and Australia.",
+        "stat_All_Regions": "There are 48 nations in the World Cup 2026, represented with {total_players} players; The players belong to one of {total_clubs} professional clubs.",
+    }
+    
+    function draw_bubble_chart(mode) 
+    {
+        
+        bubblechartCanvas.selectAll("g").remove();
+        d3.selectAll("line").remove();
+        playerCanvas.selectAll("g").remove();
+        top_players_info.clear()
+        map_fifa_country.clear();
+        map_clubs.clear();
+        var total_players = 0
+        var total_clubs = 0
+        
+        var wc_data = d3.csv("WorldCupPlayerStats.csv").then(function(data_tmp) {
+
+
+            // Filter Data based on the mode of operation
+            // Default mode == undefined = Normal. show top 25 clubs
+            // if filter by region is done, show all clubs but filtered by region.
+            // if mode is explore mode, then depends on what is filtered. update the chart.
+            var data ;
+            if(mode == undefined) { data = data_tmp}
+            else { 
+                    data = filter_by_mode(mode, data_tmp); 
+                    
+                }
+
+
+            // 1. Create 2 Hash Maps
+            // - First Hash Map = Key of Fifa Country Code, and value is a List of All Players for that country and their assigned club. Nice to have - goals.
+            // - Second Hash Map - Key of Clubb Names, value is list of all players for that club and their assigned country.
+            // Above will assist in easy access to values.
+
+            // Sort data by top goal scorers so we can capture the names and annotate them later
+            data.sort((a,b) => b.player_stats_goals - a.player_stats_goals).forEach(function(d,i) {
+                total_players += 1 
+                if(i <= num_of_top_players_visible) {
+                    top_players_info.set(d.player_id, d)
+                }
+                if(map_fifa_country.has(d.teams_fifa_code)) {
+                    map_fifa_country.get(d.teams_fifa_code).push({"player_name": d.player_name, "club_team": d.club_team, "player_value": d.market_value_eur * 1.2})
+                } else {
+                    var player_values = [{"player_name": d.player_name, "club_team": d.club_team, "player_value": d.market_value_eur * 1.2}]
+                    map_fifa_country.set(d.teams_fifa_code, player_values)
+                }
+
+                if(map_clubs.has(d.club_team)) {
+                    map_clubs.get(d.club_team).push({"player_name": d.player_name, "fifa_code": d.teams_fifa_code, "player_value": d.market_value_eur * 1.2, "club_region": d.club_region, "club_country_name": d.club_country_name})
+
+                } else {
+                    map_clubs.set(d.club_team, [{"player_name": d.player_name, "fifa_code": d.teams_fifa_code, "player_value": d.market_value_eur * 1.2, "club_region": d.club_region, "club_country_name": d.club_country_name}])
+
+
+                }
+                
             });
-            // Raise the circles and lines so its not hidden.
-            circles.raise();
-            club_texts.raise();
-            lines.lower();
+            total_clubs = map_clubs.keys().toArray().length;
+            console.log("Total Players: " + total_players)
+            console.log("Total Clubs: " + total_clubs)
+            console.log("Top " + top_teams_count + " Clubs Shown ")
+            // Display Stats
+            
+            if(mode != undefined) {
+                if(mode['mode'] == 'filter_by_region') {
+                    elem_id = "stat_" + mode['region_name'].replace(" ","_");
+                    
+                    var elem = d3.select("#" + elem_id)
+                    .attr("d1", () => {console.log("test")})
+                    .html(total_players + " Players | " + parseInt((total_players / tournament_total_players) * 100) + "%")
+                    console.log(elem)
 
-            // Add players along a line - using interpolate function to determine the points along
-            // line of points pA(x1,y1) and pB(x2,y2)
+                    var regional_narrative_text = regional_narratives[elem_id]
+                    regional_narrative_text = regional_narrative_text.replace("{total_clubs}", total_clubs)
+                    regional_narrative_text = regional_narrative_text.replace("{total_players}", total_players)
+                    regional_narrative_text = regional_narrative_text.replace("{total_percentage}", parseInt((total_players / tournament_total_players) * 100) )
+                    d3.select("#narrative_blurb")
+                    .html(regional_narrative_text)
+                    // var elem = document.getElementById(elem_id);
+                    // elem.innerHTML = total_players + " Players | " + parseInt((total_players / tournament_total_players) * 100) + "%"
+                }
+                
+            }
+        
+            
+            //var filtered_clubs = map_clubs.entries().filter(([club_team, players]) => players.length > club_member_count_threshold);
+            var filtered_clubs = new Map([...map_clubs.entries()].sort((a,b) => b[1].length - a[1].length ).slice(0,top_teams_count));
+            //console.log( filtered_clubs.entries().toArray())
+            
+            var arr_filtered_clubs = filtered_clubs.entries().toArray();
+            min_players = arr_filtered_clubs[arr_filtered_clubs.length-1][1].length
+            max_players_in_club = filtered_clubs.entries().toArray()[0][1].length
+
+
+            // Bubble sizes
+            // The range should be proportionate to size of the big circle
+            // 
+            var outer_circle_radius_scale = d3.scaleSqrt()
+                .domain([Math.ceil(min_players/2), max_players_in_club])
+                .range([1, outer_circle_radius/7]); // Adjust the range for desired circle sizes
+
+            const colorScale = d3.scaleSequential()
+            .domain([Math.ceil(min_players/2), max_players_in_club]) // Your data's min and max values
+            .interpolator(d3.interpolateRgb("lightgray", "darkgreen"));
+
+            // Club's country scale (ordinal)
+            var club_regions = ["North America","South America", "Europe","Asia","Africa","Oceania"];
+            const schemeColors = [d3.schemeCategory10];        
+
+        const club_cntry_color_scale = d3.scaleOrdinal(d3.schemeCategory10)
+            .domain(club_regions);
+            // Update Legend
+            var legend_club_regions_canvas = legendCanvas.append("g")
+            legend_club_regions = legend_club_regions_canvas.selectAll("g")
+                    .data(club_regions)
+                    .enter()
+                    .append("g")
+                    .attr("transform", "translate(0,0)");
+            var legend_rect_canvas =  legend_club_regions_canvas.append("rect")
+                    .attr("width",legend_width-10)
+                    .attr("height",(2*legend_circle_radius + legend_spacing) * 16)
+                    .attr("stroke","#DDDDDD")
+                    .attr("stroke-width",1)
+                    .attr("fill","lightgray")
+                    .attr("fill-opacity","0.1")
+                    .attr("x", 10)
+                    .attr("y", 200 + legend_y)
+                    .attr("rx",10)
+                    .attr("ry",10)
+                    .lower()
+                legend_club_regions_canvas
+                .append("text")
+                .attr("fill", "black")
+                .attr("x",legend_width / 2)
+                .attr("y",legend_y + 200)
+                .attr("text-anchor", "middle")
+                .style("font-size", "14px")
+                .style("font-family", "Arial")
+                .style("font-weight", "bold")
+                .attr("alignment-baseline", "middle")
+                .text("Soccer Club Location")
+
+                legend_club_regions
+                    .append("circle")
+                    .attr("r","10")
+                    .attr("fill", d =>  club_cntry_color_scale(d))
+                    .attr("cx", (d,i) => (i > 12) ? legend_x + 150 : legend_x)
+                    .attr("cy", (d, i) => { 
+                        if(i > 12) {
+                            return 250 + legend_y + ((i-13) * (legend_circle_radius * 2 + legend_spacing)) ; 
+                        } else {
+                            return 250 + legend_y + (i * (legend_circle_radius * 2 + legend_spacing)) ; 
+                        }
+                    }
+                    )
+
+                legend_club_regions
+                .append("text")
+                .attr("fill", "black")
+                .attr("text-anchor", "left")
+                .attr("alignment-baseline", "middle")
+                .style("font-size", "12px")
+                .style("font-family", "Arial")
+                .style("font-weight", "bold")
+                .attr("x", (d,i) => (i > 12) ? legend_x + 165 : legend_x + 15)
+                .attr("y", (d, i) => {if(i > 12) {
+                            return 250 + legend_y + ((i-13) * (legend_circle_radius * 2 + legend_spacing)) ; 
+                        } else {
+                            return 250 + legend_y + (i * (legend_circle_radius * 2 + legend_spacing)) ; 
+                        }
+                    }
+                )
+                .text(d => d)
+                .raise()
+                    
+                    
             
 
+            var club_team_data_nodes_tmp =  filtered_clubs.entries().map(([club_team, players]) => ({
+                radius: outer_circle_radius_scale(players.length), // Use the scaling function for consistent sizing
+                x: Math.random() * canvas_width-200,
+                y: Math.random() * (canvas_height - 100) ,
+                players: players,
+                club_team: club_team
+            }));
+            //var club_team_data_nodes = club_team_data_nodes_tmp.toArray(); // iterator to array
+            var club_team_data_nodes = club_team_data_nodes_tmp.toArray(); // iterator to array
+            var clubnames = club_team_data_nodes.map(d => d.club_team)
+            
+            players = data.filter(d =>  clubnames.includes(d.club_team))
+            
+            
+
+            var  circles = bubblechartCanvas.selectAll("g")
+                            .attr("club_team", d => d.club_team)
+                            .data(club_team_data_nodes).enter()
+                            .append("g")
+                            .attr("transform", "translate(" + canvas_width/2 + "," + canvas_height/2 +")")
+                            .attr("alignment-baseline", "middle")
+                                            .on("mouseover", function(event,d) {
+                    d3.select(this).style("cursor", "pointer");                
+
+                    d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .attr("r", d=> d.radius + 15);
+                    var tooltip_text = "<div style='display: table; border: 1px solid #CCCCCC; border-radius: 5px;'>"
+                        tooltip_text += "<div style='display: table-row; padding: 10px;'>"
+                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Club Name</b>: </div>"
+                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.club_team + "</div></div>"
+                        tooltip_text += "<div style='display: table-row; padding: 10px;'>"
+                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Location</b>: </div>"
+                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.players[0].club_country_name + "</div></div>"
+                        tooltip_text += "<div style='display: table-row'>"
+                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Player Representation</b>: </div>"
+                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.players.length + "</div></div>"
+                        tooltip_text += "</div>"
+                    tooltip
+                        .style("visibility","visible")
+                        .style("top", (event.offsetY-30)+"px").style("left",(event.offsetX+30)+"px")
+                        .html(tooltip_text)
+                
+                })
+                .on("mouseout", function(event,d) {
+                    d3.select(this).style("cursor", "default");                
+
+                    d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .attr("r", d=> d.radius )
+                    tooltip
+                        .style("visibility","hidden")
+
+                })
+                .on("click", function(event, d) {
+                                highlight_lines_clubs(d.club_team, undefined)
+                            })
+                                        
+                
+;
+
+                            
 
             
-    });
-    d3.selectAll("line").lower();
-    d3.selectAll("g[fifa_code]").raise();
+            circles
+                .append("circle")
+                .attr("club_team",d => d.club_team)
+                //.attr("fill", d => {return (d.players.length < 5) ? "gray" : colorScale(d.players.length)})
+                .attr("fill", d => { return club_cntry_color_scale(d.players[0].club_region)})
+                .attr("stroke", "black")
+                .attr("stroke-width", 1)
+
+                .attr("r", d =>  { return (d.players.length <= 1) ? "5" : d.radius})
+                .raise()
+                // .on("mouseover", function(event,d) {
+                //     d3.select(this).style("cursor", "pointer");                
+
+                //     d3.select(this)
+                //     .transition()
+                //     .duration(200)
+                //     .attr("r", d=> d.radius + 15);
+                //     var tooltip_text = "<div style='display: table; border: 1px solid #CCCCCC; border-radius: 5px;'>"
+                //         tooltip_text += "<div style='display: table-row; padding: 10px;'>"
+                //         tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Club Name</b>: </div>"
+                //         tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.club_team + "</div></div>"
+                //         tooltip_text += "<div style='display: table-row; padding: 10px;'>"
+                //         tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Location</b>: </div>"
+                //         tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.players[0].club_country_name + "</div></div>"
+                //         tooltip_text += "<div style='display: table-row'>"
+                //         tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Player Representation</b>: </div>"
+                //         tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.players.length + "</div></div>"
+                //         tooltip_text += "</div>"
+                //     tooltip
+                //         .style("visibility","visible")
+                //         .style("top", (event.offsetY-30)+"px").style("left",(event.offsetX+30)+"px")
+                //         .html(tooltip_text)
+                
+                // })
+
+                // .on("mouseout", function(event,d) {
+                //     d3.select(this).style("cursor", "default");                
+
+                //     d3.select(this)
+                //     .transition()
+                //     .duration(200)
+                //     .attr("r", d=> d.radius )
+                //     tooltip
+                //         .style("visibility","hidden")
+
+                // })
+                // .on("click", function(event, d) {
+                //                 highlight_lines_clubs(d.club_team, undefined)
+                //             })
+                                        
+                
+
+                    
+            
+            var lines = bubblechartCanvas.selectAll("line")
+                .data(players)
+                .enter()
+                .append("line")
+                .attr("stroke", "gray")
+                .attr("opacity","0.1")
+                .attr("stroke-width", "1")
+                .attr("fifa_code", d=>d.teams_fifa_code)
+                .attr("club_team", d => d.club_team)
+    ;
+
+            var club_texts = circles
+                .append("text")
+                .style("fill","black")
+                .attr("text-anchor", "middle")
+                .attr("alignment-baseline", "middle")
+                .style("fill", "black")
+                .style("font-size", "10px")
+                .style("font-family", "Arial")
+                .style("font-weight", "bold")
+                .attr("club_team", d => d.club_team)
+                .text(d =>  d.club_team)
+
+
+
+            var players_circles = playerCanvas.selectAll("g")
+                            .data(top_players_info)
+                            .enter()
+                            .append("g")
+                            .attr("transform","translate(100,100)")
+                            .attr("club_team", d => d[1].club_team)
+                            .attr("fifa_code", d => d[1].teams_fifa_code)
+                            .on("mouseover", function(event,d) {
+                                var tooltip_text = "<table border=1 cellpadding=5 cellspacing=0><tr><td colspan=2><b>" + d[1].player_name + "</b></td></tr>"
+                                    tooltip_text += "<tr><td>Country</td><td>" + d[1].team_name + " ( " + d[1].teams_fifa_code+" )</td></tr>"
+                                    tooltip_text += "<tr><td>Club</td><td>" + d[1].club_team + "</td></tr>"
+                                    tooltip_text += "<tr><td>Goals</td><td>" + d[1].player_stats_goals + "</td></tr>"
+                                    tooltip_text += "<tr><td>Assists</td><td>" + d[1].player_stats_assists + "</td></tr>"
+                                    tooltip_text += "</table>"
+                                tooltip
+                                    .style("visibility","visible")
+                                    .style("top", (event.offsetY-30)+"px").style("left",(event.offsetX+10)+"px")
+                                    .html(tooltip_text)
+
+
+                            })
+                            .on("mouseout", function(event,d) {
+                                tooltip
+                                    .style("visibility","hidden")
+
+                            })
+                            //.style("visibility", "hidden")
+    ;
+                players_circles
+                            .append("circle")
+                            .attr("r","10")
+                            .attr("fill","lightgray")
+                players_circles
+                        .append("text")
+                        .attr("fill","black")
+                        .attr("text-anchor", "middle")
+                        .attr("alignment-baseline", "middle")
+                        .style("fill", "black")
+                        .style("font-size", "10px")
+                        .style("font-family", "Arial")
+                        .style("font-weight", "bold")
+                        .text(d=> { 
+                            // player names can be large so split by space and only show last name
+                            var player_name_attribute = d[1].player_name.split(" ")
+                            return player_name_attribute[player_name_attribute.length - 1];
+                        
+                        })
+
+            const simulation = d3.forceSimulation(club_team_data_nodes)
+                .force("charge", d3.forceManyBody().strength(-10))
+                .force("collision", d3.forceCollide().radius(d => d.radius+5).strength(0.1))
+                .force("radial", d3.forceRadial(outer_circle_radius - (team_rect_length), canvas_width/2, canvas_height/2).strength(0.0001)) // Bounds the nodes
+                .force("x", d3.forceX(canvas_width/2).strength(d => Math.max(d.radius,4) * 0.003))
+                .force("y", d3.forceY(canvas_height/2).strength( d => Math.max(d.radius,4) * 0.003))
+                .on("tick", () => {
+                    // move the circles as per the forces applied to x,y
+                    circles
+                        .attr("transform", d =>  "translate(" + Math.max(d.radius, Math.min(canvas_width - d.radius, d.x))+ "," + Math.max(d.radius, Math.min(canvas_height - d.radius, d.y)) +")");
+                    // move the lines along with the circles.
+                    lines
+                    .attr("x1", d => {
+                        var club_node = teams_map.get(d.teams_fifa_code);
+                        return club_node ? club_node.x : 0;
+                    })
+                    .attr("y1", d => {
+                        var club_node = teams_map.get(d.teams_fifa_code);
+                        return club_node ? club_node.y : 0;
+                    })
+                    .attr("x2", d => {
+                        
+                        var team_node = club_team_data_nodes.find(node => node.club_team === d.club_team);
+                        return team_node.x ;
+                    })
+                    .attr("y2", d => {
+                        var team_node = club_team_data_nodes.find(node => node.club_team === d.club_team);
+                        return team_node.y 
+                    });
+                players_circles
+                .attr("transform", d => {
+                    
+                        var club_node = teams_map.get(d[1].teams_fifa_code);
+                        var team_node = club_team_data_nodes.find(node => node.club_team == d[1].club_team);
+                        
+                        if(team_node != undefined) {
+                            
+                            var interpolateX = d3.interpolateNumber(club_node.x, team_node.x);
+                            var interpolateY = d3.interpolateNumber(club_node.y, team_node.y);
+                            var new_x = interpolateX(0.2)
+                            var new_y = interpolateY(0.2)
+                            //console.log(d[1].player_name + " (" + new_x + "," + new_y +")")
+                            return "translate("+new_x+"," + new_y +")"
+
+                        }
+                })
+
+                });
+                // Raise the circles and lines so its not hidden.
+                circles.raise();
+                club_texts.raise();
+                lines.lower();
+
+                // Add players along a line - using interpolate function to determine the points along
+                // line of points pA(x1,y1) and pB(x2,y2)
+                
+
+
+                
+        });
+        d3.selectAll("line").lower();
+        d3.selectAll("g[fifa_code]").raise();
+
+    }
 
 
 
     // populate the narrative texts
-    
-    // Array of narrative texts for purpose of populating the text slide on the left
-    // with dynamic updates of the div container.
+    // The slides are stored in slideX.html where X = 1,2,3 slide numbers
+    // these are dynamically loaded
     current_id = 0
-    narrative_texts = ["slide1.html"]
-    page_arrow_texts = [[undefined, "The first question!"]]
-    var test_html ;
-    async function update_slide(slide_num) {
-        slide_name = narrative_texts[slide_num] ;
-        var narrative_html = await d3.html(slide_name)
-        test_html = narrative_html;
-        // var next_arrow = "<div>Next: " + page_arrow_texts[slide_num][1] + "</div>"
-        // var prev_arrow = ""
-        // if( page_arrow_texts[slide_num][0] != undefined) {
-        //     prev_arrow = "<div>" + page_arrow_texts[slide_num][0] + "</div>"
+    narrative_texts = ["slide1.html","slide2.html","argvsspain.html","explore.html"]
+    page_arrow_texts = [[undefined,"The First Question!"],["Home","Argentina Vs Spain"],["The First Question!","Explore..."],["Argentina Vs Spain", undefined]]
+        async function populate_narrative_text(slide_num) {
+            slide_name = narrative_texts[slide_num] ;
+            var narrative_html = await d3.html(slide_name)
+            test_html = narrative_html;
+            
+            var narrative_text_div = d3.select("#narrative_text").html(narrative_html.body.innerHTML)
+            
+            if(page_arrow_texts[slide_num][0] != undefined) {
+                narrative_text_div.append("div")
+                    .attr("id","prev_slide")
+                    .style("border","1px solid #AAAAAA")
+                    .style("background-color", "#EEEEEE")
+                    .style("border-radius","5px")
+                    .style("width", "250px")
+                    .style("padding","10px")
+                    .style("text-align", "center")
+                    .style("cursor", "pointer")
+                    .html(() => { return page_arrow_texts[slide_num][0] == undefined ? "" : "<div> Prev: " + page_arrow_texts[slide_num][0] + "</div>"})
+                    .on("click", function(event) {populate_narrative_text(slide_num-1)})
 
-        // }
-        
-        d3.select("#narrative_text").html(narrative_html.body.innerHTML)
-        .append("div")
-            .attr("id","prev_slide")
-            .html(() => { return page_arrow_texts[slide_num][0] == undefined ? "" : "<div>" + page_arrow_texts[slide_num][0] + "</div>"})
-        .append("div")
-            .attr("id", "next_slide")
-            .html( () => { return "<div>Next: " + page_arrow_texts[slide_num][1] + "</div>"})
+            }
+
+            if(page_arrow_texts[slide_num][1] != undefined) {
+                narrative_text_div.append("div")
+                    .attr("id", "next_slide")
+                    .style("border","1px solid #AAAAAA")
+                    .style("background-color", "#EEEEEE")
+                    .style("border-radius","5px")
+                    .style("width", "250px")
+                    .style("padding","10px")
+                    .style("text-align", "center")
+                    .style("cursor", "pointer")
+                    .html( () => { return "Next: " + page_arrow_texts[slide_num][1] })
+                    .on("click", function(event) {populate_narrative_text(slide_num+1)})
+            }        
+
+        }
 
 
-    }
+    
 
-    update_slide(0) ;
+
+
+
+    populate_narrative_text(0);
+    draw_worldcup_teams();
+    draw_bubble_chart();
 </script>
 
 </script>
