@@ -47,6 +47,11 @@
     // Size of circles calculations based on window sizes..  etc
 
     var canvas_width = ((window.innerWidth > window.innerHeight) ? window.innerHeight : window.innerWidth) * 0.98;
+    // Per experimentation - width of 900 seems to be the best for the chart to show.
+    // Constrain it to 900 max.
+
+    canvas_width = Math.min(900, Math.max(900,canvas_width))
+    console.log(canvas_width)
     var canvas_height = canvas_width ;
     var legend_height = canvas_height ; // same height as graph canvas
     var legend_width = Math.min(300, (window.innerWidth - canvas_width) * 0.8) ; // leave some spacing.
