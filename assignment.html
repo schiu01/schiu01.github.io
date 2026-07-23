@@ -341,6 +341,13 @@
 
     }
 
+    function filter_chart_by_country(fifa_code) {
+        // this is called from the slide texts.
+        //alert(fifa_code)
+        //activate_by_fifa_code(fifa_code);
+        draw_bubble_chart({"mode": "filter_by_country", "fifa_code": fifa_code,"show_all_clubs": true, "show_all_players": true})
+        return false;
+    }
 
     function filter_chart_by_region(region_name) {
         draw_bubble_chart({"mode": "filter_by_region", "region_name": region_name,"show_all_clubs": true})
@@ -465,6 +472,22 @@
                     return_data.push(d)
                 }
             })
+        }
+        else if(mode['mode'] == "filter_by_region" && mode['region_name'] == 'All Regions') {
+                    //console.log(mode)
+                    if(mode['show_all_clubs']) { top_teams_count = 25;}
+                    return_data = data_tmp
+
+                } else if (mode['mode'] == "filter_by_country") {
+            if(mode['show_all_clubs']) { top_teams_count = 450}
+            if(mode['show_all_players']) { num_of_top_players_visible = 100; }
+            data_tmp.forEach((d,i) => {
+                if(d.teams_fifa_code == mode['fifa_code']) {
+                    return_data.push(d)
+                }
+            })
+
+
         } else {
             return_data = data_tmp
         }
@@ -504,6 +527,7 @@
             // Default mode == undefined = Normal. show top 25 clubs
             // if filter by region is done, show all clubs but filtered by region.
             // if mode is explore mode, then depends on what is filtered. update the chart.
+
             var data ;
             if(mode == undefined) { data = data_tmp}
             else { 
@@ -518,13 +542,18 @@
             // Above will assist in easy access to values.
 
             // Sort data by top goal scorers so we can capture the names and annotate them later
+            
             data.sort((a,b) => b.player_stats_goals - a.player_stats_goals).forEach(function(d,i) {
+                d['interpolate_factor'] =Math.random() * (0.8 - 0.5) + 0.5 // interpolate factor is used for allocating players along the line of country and club. sweet spot is between 0.2 and 0.7
+                
                 total_players += 1 
+                
+
                 if(i <= num_of_top_players_visible) {
                     top_players_info.set(d.player_id, d)
                 }
                 if(map_fifa_country.has(d.teams_fifa_code)) {
-                    map_fifa_country.get(d.teams_fifa_code).push({"player_name": d.player_name, "club_team": d.club_team, "player_value": d.market_value_eur * 1.2})
+                    map_fifa_country.get(d.teams_fifa_code).push({"player_name": d.player_name, "club_team": d.club_team, "player_value": d.market_value_eur * 1.2} )
                 } else {
                     var player_values = [{"player_name": d.player_name, "club_team": d.club_team, "player_value": d.market_value_eur * 1.2}]
                     map_fifa_country.set(d.teams_fifa_code, player_values)
@@ -544,6 +573,8 @@
             console.log("Total Players: " + total_players)
             console.log("Total Clubs: " + total_clubs)
             console.log("Top " + top_teams_count + " Clubs Shown ")
+
+
             // Display Stats
             
             if(mode != undefined) {
@@ -551,9 +582,7 @@
                     elem_id = "stat_" + mode['region_name'].replace(" ","_");
                     
                     var elem = d3.select("#" + elem_id)
-                    .attr("d1", () => {console.log("test")})
                     .html(total_players + " Players | " + parseInt((total_players / tournament_total_players) * 100) + "%")
-                    console.log(elem)
 
                     var regional_narrative_text = regional_narratives[elem_id]
                     regional_narrative_text = regional_narrative_text.replace("{total_clubs}", total_clubs)
@@ -563,6 +592,55 @@
                     .html(regional_narrative_text)
                     // var elem = document.getElementById(elem_id);
                     // elem.innerHTML = total_players + " Players | " + parseInt((total_players / tournament_total_players) * 100) + "%"
+                } 
+                else if(mode['mode'] == 'filter_by_country') {
+                    d3.select("#narrative_blurb").selectAll("div").remove()
+                    d3.select("#narrative_blurb").html("Roster Lineup")
+                    var player_table = d3.select("#narrative_blurb").append("div").append("table").attr("border","0").attr("cellpadding","3px")
+                    var header = player_table.append("thead")
+                        .style("font-family","arial")
+                        .style("font-size","12px")
+                        .style("border-bottom", "1px solid #AAAAAA")
+                    header_row = header.append("tr")
+                    header_row.append("th").html("Player Name")
+                    header_row.append("th").html("Club's Country")
+                    header_row.append("th").html("Club Name")
+                    // console.log(data)
+                    
+                    var player_section = player_table.append("tbody")
+                    var player_row = player_section.selectAll("tr")
+                        .data(data)
+                        .enter()
+                        .append("tr")
+                        .style("font-family","arial")
+                        .style("font-size","12px")
+                        
+                    
+                    
+                    player_row.append("td").style("border-bottom", "1px solid #AAAAAA").html(d=> d.player_name)
+                    player_row.append("td").style("border-bottom", "1px solid #AAAAAA").html(d=> d.club_country_name)
+                    player_row.append("td").style("border-bottom", "1px solid #AAAAAA").html(d=> d.club_team)
+                    d3.select("#narrative_blurb")
+                        .append("div")
+                        .style("background-color","#FFEEEE")
+                        .style("padding","10px")
+                        .style("margin","10px")
+                        .style("font-family","arial")
+                        .style("font-size","12px")
+                        .html( () => {
+                            var return_text = ""
+                            if(mode['fifa_code'] == 'ARG') {
+                                return_text = "Argentina only has 2 players that are actively playing in Argentinian clubs! The rest of the roster plays for clubs in Europe with a number of them playing in Spain. <b>Love affair with european clubs...YES!</b>"
+                            } else if(mode['fifa_code'] == 'ESP') {
+                                return_text = "Majority of spanish players play for clubs in spain... Spanish Division I league is considered as one of the best in the world!"
+
+                            }
+
+                            return return_text;
+                        })
+                        
+                        //.html(d => "<div style='display:table-row'><div style='display:table-cell'>" + d.player_name + "</div>" + "<div style='display: table-cell'>" + d.club_country_name + "(" + d.club_team+")")
+
                 }
                 
             }
@@ -893,8 +971,23 @@
                             
                             var interpolateX = d3.interpolateNumber(club_node.x, team_node.x);
                             var interpolateY = d3.interpolateNumber(club_node.y, team_node.y);
-                            var new_x = interpolateX(0.2)
-                            var new_y = interpolateY(0.2)
+                            var new_x, new_y;
+                            if(mode == undefined) {
+                                // default - let it bunch towards the country rect box
+                                new_x = interpolateX(0.2)
+                                new_y = interpolateY(0.2)
+
+                            } else {
+                                // if mode is country mode (arg vs spain)
+                                // then move players along the lines so its more spread out.
+                                
+                                var interpolate_factor = d[1].interpolate_factor;
+                                
+                                new_x = interpolateX(interpolate_factor)
+                                new_y = interpolateY(interpolate_factor)
+
+                            }
+                            
                             //console.log(d[1].player_name + " (" + new_x + "," + new_y +")")
                             return "translate("+new_x+"," + new_y +")"
 
@@ -928,11 +1021,16 @@
     narrative_texts = ["slide1.html","slide2.html","argvsspain.html","explore.html"]
     page_arrow_texts = [[undefined,"The First Question!"],["Home","Argentina Vs Spain"],["The First Question!","Explore..."],["Argentina Vs Spain", undefined]]
         async function populate_narrative_text(slide_num) {
+            // reset
+            top_teams_count = 25;
+            reset_elements()
+            draw_bubble_chart()
             slide_name = narrative_texts[slide_num] ;
             var narrative_html = await d3.html(slide_name)
             test_html = narrative_html;
             
-            var narrative_text_div = d3.select("#narrative_text").html(narrative_html.body.innerHTML)
+            var narrative_text_div = d3.select("#narrative_text").html(narrative_html.body.innerHTML).append("div").style("display","flex").style("padding", "10px")
+
             
             if(page_arrow_texts[slide_num][0] != undefined) {
                 narrative_text_div.append("div")
@@ -940,7 +1038,7 @@
                     .style("border","1px solid #AAAAAA")
                     .style("background-color", "#EEEEEE")
                     .style("border-radius","5px")
-                    .style("width", "250px")
+                    .style("width", "200")
                     .style("padding","10px")
                     .style("text-align", "center")
                     .style("cursor", "pointer")
@@ -955,7 +1053,7 @@
                     .style("border","1px solid #AAAAAA")
                     .style("background-color", "#EEEEEE")
                     .style("border-radius","5px")
-                    .style("width", "250px")
+                    .style("width", "200")
                     .style("padding","10px")
                     .style("text-align", "center")
                     .style("cursor", "pointer")
