@@ -51,7 +51,7 @@
     // Constrain it to 900 max.
 
     canvas_width = Math.min(900, Math.max(900,canvas_width))
-    console.log(canvas_width)
+    
     var canvas_height = canvas_width ;
     var legend_height = canvas_height ; // same height as graph canvas
     var legend_width = Math.min(300, (window.innerWidth - canvas_width) * 0.8) ; // leave some spacing.
@@ -192,6 +192,345 @@
         .raise()
         ;
     
+    var canvas_top =  d3.select("#graphCanvas").node().getBoundingClientRect()
+
+
+    // This section is for dynamic data population for explore page.
+
+    function populate_explore_page() {
+
+        // containers = dropdown-fifa-code, 
+                // <div class="tag-container"  id="dropdown-fifa-code" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
+                //   <input type="text" id="input-fifa-code" list="tag-options" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
+                //   <datalist id="datalist-fifa-code"></datalist>        
+        var wc_teams = d3.csv("WorldCupTeams.csv").then(function(data) {
+            var active_fifa_code_tags = []
+            function update_teams() {
+                
+                var datalist = d3.select("#datalist-fifa-code").selectAll("option").data(data).enter().append("option").text(d => d.team_name).attr("value", d=>d.fifa_code)
+                var fifa_code_tags = d3.select(".fifa-code-tag-container").selectAll(".tag").data(active_fifa_code_tags, d=> d);
+                fifa_code_tags.exit().remove();
+                var fifa_code_tags_enter = fifa_code_tags.enter()
+                    .insert("span","#input-fifa-code")
+                    .attr("class","tag")
+                    .style("background", "#e0e0e0")
+                    .style("padding", "2px 6px")
+                    .style("border-radius", "3px")
+                    .style("display", "inline-flex")
+                    .style("align-items", "center")
+                    .style("gap", "5px");
+                fifa_code_tags_enter.append("span").attr("class","wcteam-tag").text(d => d)
+                fifa_code_tags_enter.append("span").html("&times;")
+                    .style("cursor", "pointer")
+                    .style("font-weight", "bold")
+                    .on("click", function(event, d) {
+                        active_fifa_code_tags = active_fifa_code_tags.filter(tag => tag !== d);
+                        update_teams();
+                        // Update chart.
+                        list_fifa_code = d3.selectAll(".wcteam-tag").nodes().map(n => n.textContent)
+                        if(list_fifa_code.length > 0) {
+                            // reset_elements();
+                            activate_by_fifa_code(list_fifa_code);
+                        } else {
+                            top_teams_count = 25;
+                            num_of_top_players_visible = 50;
+                            reset_elements()
+                            draw_bubble_chart()
+                        }
+
+                    });
+                d3.select("#input-fifa-code").on("input", function() {
+                    const value = this.value.trim();
+                    const options = Array.from(document.querySelectorAll("#datalist-fifa-code option")).map(o => o.value);
+
+                    // If item matches datalist and isn't already a tag, add it
+                    if (options.includes(value) && !active_fifa_code_tags.includes(value)) {
+                    active_fifa_code_tags.push(value);
+                    this.value = ""; // Clear input for next selection
+                    update_teams();
+
+                    // Update chart.
+                    list_fifa_code = d3.selectAll(".wcteam-tag").nodes().map(n => n.textContent)
+                    if(list_fifa_code.length > 0) {
+                        top_teams_count = 500;
+                        num_of_top_players_visible = 2000;
+                        draw_bubble_chart({"mode": "filter_by_fifa_code"});
+                        activate_by_fifa_code(list_fifa_code);
+
+                    }
+
+                    }
+                });
+        }
+        update_teams()
+        });
+        var wc_data = d3.csv("WorldCupPlayerStats.csv").then(function(data_tmp) {
+            var club_region_map = new Map();
+            var club_country_map = new Map();
+            var club_name_map = new Map();
+            var player_names_map = new Map();   
+            var active_tags = {
+                "region": [],
+                "country": [],
+                "club": [],
+                "player": []
+            }
+
+            data_tmp.forEach((d) => {
+                if(!club_region_map.has(d.club_region)) {
+                    club_region_map.set(d.club_region, new Map())
+                }
+                club_region_map.get(d.club_region).set(d.club_country_name,1)
+
+                if(!club_country_map.has(d.club_country_name)) {
+                    club_country_map.set(d.club_country_name, new Map())
+                }
+                club_country_map.get(d.club_country_name).set(d.club_team,1)
+
+                if(!club_name_map.has(d.club_team)) {
+                    club_name_map.set(d.club_team, new Map())
+                }
+                club_name_map.get(d.club_team).set(d.player_name,1)
+
+
+                
+                player_names_map.set(d.player_name, "1")
+                
+                
+            })
+
+            test_country_map = club_region_map ;
+            /** helper function to update region input box and update select list **/
+            function update_region() {
+                var datalist = d3.select("#datalist-region").selectAll("option").data(club_region_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
+                var region_tags = d3.select(".region-tag-container").selectAll(".tag").data(active_tags['region'], d=> d);
+                region_tags.exit().remove();
+                var region_tags_enter = region_tags.enter()
+                    .insert("span","#input-region")
+                    .attr("class","tag")
+                    .style("background", "#e0e0e0")
+                    .style("padding", "5px 8px")
+                    .style("border-radius", "3px")
+                    .style("display", "inline-flex")
+                    .style("align-items", "center")
+                    .style("font-family","sans-serif")
+                    .style("gap", "5px");
+                region_tags_enter.append("span").attr("class", "region-tag").text(d => d)
+                region_tags_enter.append("span").html("&times;")
+                    .style("cursor", "pointer")
+                    .style("font-weight", "bold")
+                    .on("click", function(event, d) {
+                        active_tags['region'] = active_tags['region'].filter(tag => tag !== d);
+                        update_region();
+                        update_country();
+                    });
+                d3.select("#input-region").on("input", function() {
+                    const value = this.value.trim();
+                    const options = Array.from(document.querySelectorAll("#datalist-region option")).map(o => o.value);
+
+                    // If item matches datalist and isn't already a tag, add it
+                    if (options.includes(value) && !active_tags['region'].includes(value)) {
+                    active_tags['region'].push(value);
+                    update_region();
+                    update_country() ;
+
+                    this.value = ""; // Clear input for next selection
+                    }
+                });
+            }
+            
+            function update_country() {
+                
+
+                var datalist =  d3.select("#datalist-country").selectAll("option");
+                datalist.remove();
+                if(active_tags['region'].length == 0 ) {
+                    datalist =  d3.select("#datalist-country").selectAll("option").data(club_country_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
+                } else {
+                    var filtered_countries = []
+                    // filter by region, then update filtered countries.
+                    var filtered_region = new Map([...club_region_map.entries()].filter(([key, value]) => active_tags['region'].includes(key)))
+                    filtered_region.entries().toArray().forEach((d) => {
+                        filtered_countries.push(...d[1].keys())
+                        //console.log(d)
+                    })
+                    
+                    datalist =  d3.select("#datalist-country").selectAll("option").data(filtered_countries).enter().append("option").text(d => d).attr("value", d=>d)
+                    //console.log(filtered_countries)
+                }
+                
+                var country_tags = d3.select(".country-tag-container").selectAll(".tag").data(active_tags['country'], d=> d);
+                country_tags.exit().remove();
+                var country_tags_enter = country_tags.enter()
+                    .insert("span","#input-country")
+                    .attr("class","tag")
+                    .style("background", "#e0e0e0")
+                    .style("padding", "5px 8px")
+                    .style("border-radius", "3px")
+                    .style("display", "inline-flex")
+                    .style("align-items", "center")
+                    .style("font-family","sans-serif")
+                    .style("gap", "5px");
+                country_tags_enter.append("span").attr("class", "country-tag").text(d => d)
+                country_tags_enter.append("span").html("&times;")
+                    .style("cursor", "pointer")
+                    .style("font-weight", "bold")
+                    .on("click", function(event, d) {
+                        active_tags['country'] = active_tags['country'].filter(tag => tag !== d);
+                        update_country();
+                        update_clubs()
+                    });
+                d3.select("#input-country").on("input", function() {
+                    const value = this.value.trim();
+                    const options = Array.from(document.querySelectorAll("#datalist-country option")).map(o => o.value);
+
+                    // If item matches datalist and isn't already a tag, add it
+                    if (options.includes(value) && !active_tags['country'].includes(value)) {
+                    active_tags['country'].push(value);
+                    this.value = ""; // Clear input for next selection
+                    update_country();
+                    update_clubs();
+                    }
+                });                
+
+            }
+
+            function update_clubs() {
+                var datalist = d3.select("#datalist-club").selectAll("option")
+                //.data(club_name_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
+                datalist.remove()
+                if(active_tags['country'].length == 0 ) {
+                    datalist =  d3.select("#datalist-club").selectAll("option").data(club_name_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
+                } else {
+                    var filtered_club_names = []
+                    // filter by region, then update filtered countries.
+                    var filtered_country = new Map([...club_country_map.entries()].filter(([key, value]) => active_tags['country'].includes(key)))
+                    filtered_country.entries().toArray().forEach((d) => {
+                        filtered_club_names.push(...d[1].keys())
+                        //console.log(d)
+                    })
+                    
+                    datalist =  d3.select("#datalist-club").selectAll("option").data(filtered_club_names).enter().append("option").text(d => d).attr("value", d=>d)
+                    //console.log(filtered_countries)
+                }                
+                var club_tags = d3.select(".club-tag-container").selectAll(".tag").data(active_tags['club'], d=> d);
+                club_tags.exit().remove();
+                var club_tags_enter = club_tags.enter()
+                    .insert("span","#input-club")
+                    .attr("class","tag")
+                    .style("background", "#e0e0e0")
+                    .style("padding", "5px 8px")
+                    .style("border-radius", "3px")
+                    .style("display", "inline-flex")
+                    .style("align-items", "center")
+                    .style("font-family","sans-serif")
+                    .style("gap", "5px");
+                club_tags_enter.append("span").attr("class", "club-tag").text(d => d)
+                club_tags_enter.append("span").html("&times;")
+                    .style("cursor", "pointer")
+                    .style("font-weight", "bold")
+                    .on("click", function(event, d) {
+                        active_tags['club'] = active_tags['club'].filter(tag => tag !== d);
+                        update_clubs();
+                        update_players();
+                    });
+                d3.select("#input-club").on("input", function() {
+                    const value = this.value.trim();
+                    const options = Array.from(document.querySelectorAll("#datalist-club option")).map(o => o.value);
+
+                    // If item matches datalist and isn't already a tag, add it
+                    if (options.includes(value) && !active_tags['club'].includes(value)) {
+                    active_tags['club'].push(value);
+                    this.value = ""; // Clear input for next selection
+                    update_clubs();
+                    update_players();
+                    }
+                });                              
+
+            }
+
+            function update_players() {
+                var datalist = d3.select("#datalist-player").selectAll("option")
+                datalist.remove();
+                //.data(player_names_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
+
+                if(active_tags['club'].length == 0 ) {
+                    datalist =  d3.select("#datalist-player").selectAll("option").data(player_names_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
+                } else {
+                    var filtered_player_names = []
+                    // filter by region, then update filtered countries.
+                    var filtered_club = new Map([...club_name_map.entries()].filter(([key, value]) => active_tags['club'].includes(key)))
+                    filtered_club.entries().toArray().forEach((d) => {
+                        filtered_player_names.push(...d[1].keys())
+                        //console.log(d)
+                    })
+                    
+                    datalist =  d3.select("#datalist-player").selectAll("option").data(filtered_player_names).enter().append("option").text(d => d).attr("value", d=>d)
+                    //console.log(filtered_countries)
+                }                 
+                var player_tags = d3.select(".player-tag-container").selectAll(".tag").data(active_tags['player'], d=> d);
+                player_tags.exit().remove();
+                var player_tags_enter = player_tags.enter()
+                    .insert("span","#input-player")
+                    .attr("class","tag")
+                    .style("background", "#e0e0e0")
+                    .style("padding", "5px 8px")
+                    .style("border-radius", "3px")
+                    .style("display", "inline-flex")
+                    .style("align-items", "center")
+                    .style("font-family","sans-serif")
+                    .style("gap", "5px");
+                player_tags_enter.append("span").attr("class", "player-tag").text(d => d)
+                player_tags_enter.append("span").html("&times;")
+                    .style("cursor", "pointer")
+                    .style("font-weight", "bold")
+                    .on("click", function(event, d) {
+                        active_tags['player'] = active_tags['player'].filter(tag => tag !== d);
+                        update_players();
+                    });
+                d3.select("#input-player").on("input", function() {
+                    const value = this.value.trim();
+                    const options = Array.from(document.querySelectorAll("#datalist-player option")).map(o => o.value);
+
+                    // If item matches datalist and isn't already a tag, add it
+                    if (options.includes(value) && !active_tags['player'].includes(value)) {
+                    active_tags['player'].push(value);
+                    this.value = ""; // Clear input for next selection
+                    update_players();
+                    }
+                });
+
+            }
+
+
+        update_region();
+        update_country();
+        update_clubs();
+        update_players()
+
+        })
+
+    }
+
+
+
+    populate_explore_page()
+
+    function explore_update_chart() {
+         var region = d3.select(".region-tag").value ;
+         var country = d3.select("#input-country").value ;
+         var club = d3.select("#input-club").value ;
+         var player = d3.select("#input-player").value ;
+
+         console.log(region)
+         console.log(country)
+        console.log(club)
+        console.log(player)
+
+        return false;
+
+    }
+
 
 
     /**
@@ -200,6 +539,9 @@
      * 
      * */
     function reset_elements() {
+            var top_teams_count = 25;
+        var num_of_top_players_visible = 20;
+
             var club_lines = d3.selectAll("line")
             club_lines
                 .attr("stroke-width","1")
@@ -268,15 +610,17 @@
                         .style("visibility", d => {if (d[1].club_team != club_team) {return  "hidden"}})
     }
 
-    function activate_by_fifa_code(fifa_code) {
+    function activate_by_fifa_code(list_fifa_code) {
 
             // this is when the fifa country team circle gets clicked.
             // 1. For all lines, if lines dont have fifa code = to the selected code, hide it
-            var club_teams = new Map()
+            var club_teams = new Map();
+            console.log(list_fifa_code)
 
             d3.selectAll("line[fifa_code]")
                 .style("visibility", d => { 
-                    if(d.teams_fifa_code == fifa_code) {
+                    //if(d.teams_fifa_code == fifa_code) {
+                    if(list_fifa_code.includes(d.teams_fifa_code)) {
                         club_teams.set(d.club_team,1)
                         return "visible"
                     } else {
@@ -290,7 +634,7 @@
                 .style("visibility", d => { 
 
                     
-                    return (d[1].teams_fifa_code == fifa_code) ? "visible" : "hidden"
+                    return (list_fifa_code.includes(d[1].teams_fifa_code)) ? "visible" : "hidden"
                 })
 
             var active_clubs = club_teams.keys().toArray();
@@ -326,7 +670,7 @@
 
             }
             else {
-                activate_by_fifa_code(fifa_code)
+                activate_by_fifa_code([fifa_code])
 
             }
 
@@ -488,7 +832,24 @@
             })
 
 
-        } else {
+        } 
+        else if (mode['mode'] == "filter_by_fifa_code") {
+            list_fifa_code = d3.selectAll(".wcteam-tag").nodes().map(n => n.textContent)
+            console.log(list_fifa_code)
+            if(list_fifa_code.length > 0) {
+                data_tmp.forEach((d,i) => {
+                    if(list_fifa_code.includes(d.teams_fifa_code)) {
+                        return_data.push(d)
+                    }
+                })
+
+            } else {
+                return_data = data_tmp
+            }
+            
+
+        }
+        else {
             return_data = data_tmp
         }
 
@@ -519,6 +880,7 @@
         map_clubs.clear();
         var total_players = 0
         var total_clubs = 0
+        
         
         var wc_data = d3.csv("WorldCupPlayerStats.csv").then(function(data_tmp) {
 
@@ -570,9 +932,6 @@
                 
             });
             total_clubs = map_clubs.keys().toArray().length;
-            console.log("Total Players: " + total_players)
-            console.log("Total Clubs: " + total_clubs)
-            console.log("Top " + top_teams_count + " Clubs Shown ")
 
 
             // Display Stats
@@ -589,6 +948,13 @@
                     regional_narrative_text = regional_narrative_text.replace("{total_players}", total_players)
                     regional_narrative_text = regional_narrative_text.replace("{total_percentage}", parseInt((total_players / tournament_total_players) * 100) )
                     d3.select("#narrative_blurb")
+                    .html("")
+                        .append("div")
+                        .style("background-color","#FFEEEE")
+                        .style("padding","10px")
+                        .style("margin","10px")
+                        .style("font-family","Roboto, Sans-serif")
+                        .style("font-size","14px")
                     .html(regional_narrative_text)
                     // var elem = document.getElementById(elem_id);
                     // elem.innerHTML = total_players + " Players | " + parseInt((total_players / tournament_total_players) * 100) + "%"
@@ -612,7 +978,7 @@
                         .data(data)
                         .enter()
                         .append("tr")
-                        .style("font-family","arial")
+                        .style("font-family","Roboto, Sans-serif")
                         .style("font-size","12px")
                         
                     
@@ -625,8 +991,8 @@
                         .style("background-color","#FFEEEE")
                         .style("padding","10px")
                         .style("margin","10px")
-                        .style("font-family","arial")
-                        .style("font-size","12px")
+                        .style("font-family","Roboto, Sans-serif")
+                        .style("font-size","14px")
                         .html( () => {
                             var return_text = ""
                             if(mode['fifa_code'] == 'ARG') {
@@ -760,28 +1126,32 @@
                             .append("g")
                             .attr("transform", "translate(" + canvas_width/2 + "," + canvas_height/2 +")")
                             .attr("alignment-baseline", "middle")
-                                            .on("mouseover", function(event,d) {
-                    d3.select(this).style("cursor", "pointer");                
+                            .style("border","1px solid black")
+                            .on("mouseover", function(event,d) {
+                                d3.select(this).style("cursor", "pointer");                
 
-                    d3.select(this)
-                    .transition()
-                    .duration(200)
-                    .attr("r", d=> d.radius + 15);
-                    var tooltip_text = "<div style='display: table; border: 1px solid #CCCCCC; border-radius: 5px;'>"
-                        tooltip_text += "<div style='display: table-row; padding: 10px;'>"
-                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Club Name</b>: </div>"
-                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.club_team + "</div></div>"
-                        tooltip_text += "<div style='display: table-row; padding: 10px;'>"
-                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Location</b>: </div>"
-                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.players[0].club_country_name + "</div></div>"
-                        tooltip_text += "<div style='display: table-row'>"
-                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Player Representation</b>: </div>"
-                        tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.players.length + "</div></div>"
-                        tooltip_text += "</div>"
-                    tooltip
-                        .style("visibility","visible")
-                        .style("top", (event.offsetY-30)+"px").style("left",(event.offsetX+30)+"px")
-                        .html(tooltip_text)
+                                d3.select(this)
+                                .transition()
+                                .duration(200)
+                                .attr("r", d=> d.radius + 15);
+                                var tooltip_text = "<div style='display: table; border: 1px solid #CCCCCC; border-radius: 5px;'>"
+                                    tooltip_text += "<div style='display: table-row; padding: 10px;'>"
+                                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Club Name</b>: </div>"
+                                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.club_team + "</div></div>"
+                                    tooltip_text += "<div style='display: table-row; padding: 10px;'>"
+                                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Location</b>: </div>"
+                                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.players[0].club_country_name + "</div></div>"
+                                    tooltip_text += "<div style='display: table-row'>"
+                                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'><b>Player Representation</b>: </div>"
+                                    tooltip_text += "<div style='display: table-cell; font-family: arial; font-size: 12px; border-bottom: 1px solid #CCCCCC;  padding: 5px;'>" + d.players.length + "</div></div>"
+                                    tooltip_text += "</div>"
+                                    var [mouse_x, mouse_y] = d3.pointer(event, window);
+
+                                tooltip
+                                    .style("visibility","visible")
+                                    .style("top", (mouse_y + 15)+"px")
+                                    .style("left",(mouse_x + 15)+"px")
+                                    .html(tooltip_text)
                 
                 })
                 .on("mouseout", function(event,d) {
@@ -891,6 +1261,7 @@
                             .attr("transform","translate(100,100)")
                             .attr("club_team", d => d[1].club_team)
                             .attr("fifa_code", d => d[1].teams_fifa_code)
+                            .attr("player_id", d => d[1].player_id)
                             .on("mouseover", function(event,d) {
                                 var tooltip_text = "<table border=1 cellpadding=5 cellspacing=0><tr><td colspan=2><b>" + d[1].player_name + "</b></td></tr>"
                                     tooltip_text += "<tr><td>Country</td><td>" + d[1].team_name + " ( " + d[1].teams_fifa_code+" )</td></tr>"
@@ -898,9 +1269,13 @@
                                     tooltip_text += "<tr><td>Goals</td><td>" + d[1].player_stats_goals + "</td></tr>"
                                     tooltip_text += "<tr><td>Assists</td><td>" + d[1].player_stats_assists + "</td></tr>"
                                     tooltip_text += "</table>"
+                                var [mouse_x, mouse_y] = d3.pointer(event, window);
                                 tooltip
                                     .style("visibility","visible")
-                                    .style("top", (event.offsetY-30)+"px").style("left",(event.offsetX+10)+"px")
+                                    // .style("top", (event.offsetY-10 - canvas_top.y)+"px")
+                                    // .style("left",(event.offsetX+10 + canvas_top.x)+"px")
+                                    .style("top", (mouse_y + 15)+"px")
+                                    .style("left",(mouse_x + 15) +"px")
                                     .html(tooltip_text)
 
 
@@ -941,23 +1316,27 @@
                 .on("tick", () => {
                     // move the circles as per the forces applied to x,y
                     circles
-                        .attr("transform", d =>  "translate(" + Math.max(d.radius, Math.min(canvas_width - d.radius, d.x))+ "," + Math.max(d.radius, Math.min(canvas_height - d.radius, d.y)) +")");
+                        .attr("transform", (d) =>  {
+                            club_team_data_nodes.find(node => node.club_team === d.club_team).x =  Math.max(d.radius, Math.min(canvas_width - d.radius, d.x))
+                            club_team_data_nodes.find(node => node.club_team === d.club_team).y =   Math.max(d.radius, Math.min(canvas_height - d.radius, d.y))
+
+                            return "translate(" + Math.max(d.radius, Math.min(canvas_width - d.radius, d.x))+ "," + Math.max(d.radius, Math.min(canvas_height - d.radius, d.y)) +")"
+                        });
                     // move the lines along with the circles.
                     lines
-                    .attr("x1", d => {
+                    .attr("x2", d => {
                         var club_node = teams_map.get(d.teams_fifa_code);
                         return club_node ? club_node.x : 0;
                     })
-                    .attr("y1", d => {
+                    .attr("y2", d => {
                         var club_node = teams_map.get(d.teams_fifa_code);
                         return club_node ? club_node.y : 0;
                     })
-                    .attr("x2", d => {
-                        
-                        var team_node = club_team_data_nodes.find(node => node.club_team === d.club_team);
+                    .attr("x1", d => {
+                        var team_node = club_team_data_nodes.find(node => node.club_team === d.club_team); 
                         return team_node.x ;
                     })
-                    .attr("y2", d => {
+                    .attr("y1", d => {
                         var team_node = club_team_data_nodes.find(node => node.club_team === d.club_team);
                         return team_node.y 
                     });
@@ -1060,6 +1439,11 @@
                     .html( () => { return "Next: " + page_arrow_texts[slide_num][1] })
                     .on("click", function(event) {populate_narrative_text(slide_num+1)})
             }        
+
+        
+            if(slide_name == "explore.html") {
+                populate_explore_page();
+            }
 
         }
 
