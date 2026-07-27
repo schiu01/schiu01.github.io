@@ -1,381 +1,76 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.js"></script>
 <body>
-    Explore Chart:
+    <h3>
+        Adhoc Chart Exploration
+    </h3>
+    <b>Notes: </b>
+    <UL>
+        <B>Bubble Chart:</B>
+    <LI>Bubble Chart: Each line denotes player(s) from the club representing the country, the darker the line - the more players from the club.</LI>
+    <LI>Each circle along the line is annotated with player's last name. </LI>
+    <LI>Teams around the bubble chart are the World Cup country team names.</LI>
+    <B>Filtering Options:</B>
+    <LI>Multiple selections for all filters are enabled (start typing in the select box)</LI>
+    <LI>To remove a selection, press &times; icon.</LI>
+    <Li>Progressive filters are applied - Example: If you select a Club's Region, the subsequent club names are filtered for that region only...</Li>
+    </UL>
+
+
+
+
     <div style="border: 1px solid #999999; background-color: #EEEEEE; margin: 10px; padding: 5px; border-radius: 10px;">
-        Select Top <select>
-                        <option value="2000">All</option>
-                        <option>10</option>
-                        <option>20</option>
-                        <option>30</option>
-                        <option>50</option>
-                        <option>100</option>
-                    </select> Players
-        <p>Select Top <select>
-                        <option value="2000">All</option>
-                        <option>10</option>
-                        <option>20</option>
-                        <option>30</option>
-                        <option>50</option>
-                        <option>100</option>
-                    </select> Clubs 
+        <table>
+            <tr>
+                <td>Select World Cup Team: </td><td>
+                    
+                    <div class="fifa-code-tag-container"  id="dropdown-fifa-code" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
+                    <input type="text" id="input-fifa-code" list="datalist-fifa-code" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
+                    <datalist id="datalist-fifa-code"></datalist>
+
+                </td>
+            </tr>
+        </table>
+    </div>    
+    <div style="border: 1px solid #999999; background-color: #EEEEEE; margin: 10px; padding: 10px; border-radius: 10px;">
+        Search Club Name and Club's Country.
+        <table cellpadding="5px">
+            <tr>
+                <td>Search By Club's Region: </td><td>
+                        <div class="region-tag-container"  id="dropdown-region" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
+                    <input type="text" id="input-region" list="datalist-region" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
+                    <datalist id="datalist-region"></datalist>
+
+                </td>
+            </tr>
+            <tr>
+                <td>Search By Club's Country: </td><td>
+                    <div class="country-tag-container"  id="dropdown-country" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
+                    <input type="text" id="input-country" list="datalist-country" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
+                    <datalist id="datalist-country"></datalist>
+
+                </td>
+            </tr>
+            <tr>
+                <td>Search By Club Name: </td><td>
+                    <div class="club-tag-container"  id="dropdown-club" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
+                    <input type="text" id="input-club" list="datalist-club" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
+                    <datalist id="datalist-club"></datalist>
+
+                </td>
+            </tr>
+            <tr>
+                <td>Search By Players: </td><td>
+                    <div class="player-tag-container"  id="dropdown-player" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
+                    <input type="text" id="input-player" list="datalist-player" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
+                    <datalist id="datalist-player"></datalist>
+
+
+                    </div></td>
+            </tr>
+            <tr><td colspan=2><button onclick="return explore_update_chart();">Update Chart</button></td><td><button onclick="return reset_explore_filters()">Reset Filters</button></td></tr>
+        </table>
     </div>
-<div style="border: 1px solid #999999; background-color: #EEEEEE; margin: 10px; padding: 5px; border-radius: 10px;">
-    <table>
-        <tr>
-            <td>Select World Cup Team: </td><td>
-                
-                <div class="fifa-code-tag-container"  id="dropdown-fifa-code" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
-                  <input type="text" id="input-fifa-code" list="datalist-fifa-code" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
-                  <datalist id="datalist-fifa-code"></datalist>
 
-            </td>
-        </tr>
-    </table>
-</div>    
-<div style="border: 1px solid #999999; background-color: #EEEEEE; margin: 10px; padding: 10px; border-radius: 10px;">
-    Search Club Name and Club's Country.
-    <table cellpadding="5px">
-        <tr>
-            <td>Search By Club's Region: </td><td>
-                    <div class="region-tag-container"  id="dropdown-region" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
-                  <input type="text" id="input-region" list="datalist-region" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
-                  <datalist id="datalist-region"></datalist>
-
-            </td>
-        </tr>
-        <tr>
-            <td>Search By Club's Country: </td><td>
-                <div class="country-tag-container"  id="dropdown-country" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
-                  <input type="text" id="input-country" list="datalist-country" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
-                  <datalist id="datalist-country"></datalist>
-
-            </td>
-        </tr>
-        <tr>
-            <td>Search By Club Name: </td><td>
-                <div class="club-tag-container"  id="dropdown-club" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
-                  <input type="text" id="input-club" list="datalist-club" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
-                  <datalist id="datalist-club"></datalist>
-
-            </td>
-        </tr>
-        <tr>
-            <td>Search By Players: </td><td>
-                <div class="player-tag-container"  id="dropdown-player" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
-                  <input type="text" id="input-player" list="datalist-player" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
-                  <datalist id="datalist-player"></datalist>
-
-
-                </div></td>
-        </tr>
-        <tr><td colspan=2><button onclick="return explore_update_chart();">Update Chart</button></td><td><button>Reset Filters</button></td></tr>
-    </table>
-</div>
-
-<div>
-    <button>Reset Chart</button>
-</div>
 
     
-
-
-<script>
-                
-
-    // var test_country_map = new Map();
-    // function populate_explore_page() {
-
-    //     // containers = dropdown-fifa-code, 
-    //             // <div class="tag-container"  id="dropdown-fifa-code" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
-    //             //   <input type="text" id="input-fifa-code" list="tag-options" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
-    //             //   <datalist id="datalist-fifa-code"></datalist>        
-    //     var wc_teams = d3.csv("WorldCupTeams.csv").then(function(data) {
-    //         var active_fifa_code_tags = []
-    //         function update_teams() {
-                
-    //             var datalist = d3.select("#datalist-fifa-code").selectAll("option").data(data).enter().append("option").text(d => d.team_name).attr("value", d=>d.fifa_code)
-    //             var fifa_code_tags = d3.select(".fifa-code-tag-container").selectAll(".tag").data(active_fifa_code_tags, d=> d);
-    //             fifa_code_tags.exit().remove();
-    //             var fifa_code_tags_enter = fifa_code_tags.enter()
-    //                 .insert("span","#input-fifa-code")
-    //                 .attr("class","tag")
-    //                 .style("background", "#e0e0e0")
-    //                 .style("padding", "2px 6px")
-    //                 .style("border-radius", "3px")
-    //                 .style("display", "inline-flex")
-    //                 .style("align-items", "center")
-    //                 .style("gap", "5px");
-    //             fifa_code_tags_enter.append("span").text(d => d)
-    //             fifa_code_tags_enter.append("span").html("&times;")
-    //                 .style("cursor", "pointer")
-    //                 .style("font-weight", "bold")
-    //                 .on("click", function(event, d) {
-    //                     active_fifa_code_tags = active_fifa_code_tags.filter(tag => tag !== d);
-    //                     update_teams();
-    //                 });
-    //             d3.select("#input-fifa-code").on("input", function() {
-    //                 const value = this.value.trim();
-    //                 const options = Array.from(document.querySelectorAll("#datalist-fifa-code option")).map(o => o.value);
-
-    //                 // If item matches datalist and isn't already a tag, add it
-    //                 if (options.includes(value) && !active_fifa_code_tags.includes(value)) {
-    //                 active_fifa_code_tags.push(value);
-    //                 this.value = ""; // Clear input for next selection
-    //                 update_teams();
-    //                 }
-    //             });
-    //     }
-    //     update_teams()
-    //     });
-    //     var wc_data = d3.csv("WorldCupPlayerStats.csv").then(function(data_tmp) {
-    //         var club_region_map = new Map();
-    //         var club_country_map = new Map();
-    //         var club_name_map = new Map();
-    //         var player_names_map = new Map();   
-    //         var active_tags = {
-    //             "region": [],
-    //             "country": [],
-    //             "club": [],
-    //             "player": []
-    //         }
-
-    //         data_tmp.forEach((d) => {
-    //             if(!club_region_map.has(d.club_region)) {
-    //                 club_region_map.set(d.club_region, new Map())
-    //             }
-    //             club_region_map.get(d.club_region).set(d.club_country_name,1)
-
-    //             if(!club_country_map.has(d.club_country_name)) {
-    //                 club_country_map.set(d.club_country_name, new Map())
-    //             }
-    //             club_country_map.get(d.club_country_name).set(d.club_team,1)
-
-    //             if(!club_name_map.has(d.club_team)) {
-    //                 club_name_map.set(d.club_team, new Map())
-    //             }
-    //             club_name_map.get(d.club_team).set(d.player_name,1)
-
-
-                
-    //             player_names_map.set(d.player_name, "1")
-                
-                
-    //         })
-
-    //         test_country_map = club_region_map ;
-    //         /** helper function to update region input box and update select list **/
-    //         function update_region() {
-    //             var datalist = d3.select("#datalist-region").selectAll("option").data(club_region_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
-    //             var region_tags = d3.select(".region-tag-container").selectAll(".tag").data(active_tags['region'], d=> d);
-    //             region_tags.exit().remove();
-    //             var region_tags_enter = region_tags.enter()
-    //                 .insert("span","#input-region")
-    //                 .attr("class","tag")
-    //                 .style("background", "#e0e0e0")
-    //                 .style("padding", "5px 8px")
-    //                 .style("border-radius", "3px")
-    //                 .style("display", "inline-flex")
-    //                 .style("align-items", "center")
-    //                 .style("font-family","sans-serif")
-    //                 .style("gap", "5px");
-    //             region_tags_enter.append("span").text(d => d)
-    //             region_tags_enter.append("span").html("&times;")
-    //                 .style("cursor", "pointer")
-    //                 .style("font-weight", "bold")
-    //                 .on("click", function(event, d) {
-    //                     active_tags['region'] = active_tags['region'].filter(tag => tag !== d);
-    //                     update_region();
-    //                     update_country();
-    //                 });
-    //             d3.select("#input-region").on("input", function() {
-    //                 const value = this.value.trim();
-    //                 const options = Array.from(document.querySelectorAll("#datalist-region option")).map(o => o.value);
-
-    //                 // If item matches datalist and isn't already a tag, add it
-    //                 if (options.includes(value) && !active_tags['region'].includes(value)) {
-    //                 active_tags['region'].push(value);
-    //                 update_region();
-    //                 update_country() ;
-
-    //                 this.value = ""; // Clear input for next selection
-    //                 }
-    //             });
-    //         }
-            
-    //         function update_country() {
-                
-
-    //             var datalist =  d3.select("#datalist-country").selectAll("option");
-    //             datalist.remove();
-    //             if(active_tags['region'].length == 0 ) {
-    //                 datalist =  d3.select("#datalist-country").selectAll("option").data(club_country_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
-    //             } else {
-    //                 var filtered_countries = []
-    //                 // filter by region, then update filtered countries.
-    //                 var filtered_region = new Map([...club_region_map.entries()].filter(([key, value]) => active_tags['region'].includes(key)))
-    //                 filtered_region.entries().toArray().forEach((d) => {
-    //                     filtered_countries.push(...d[1].keys())
-    //                     //console.log(d)
-    //                 })
-                    
-    //                 datalist =  d3.select("#datalist-country").selectAll("option").data(filtered_countries).enter().append("option").text(d => d).attr("value", d=>d)
-    //                 //console.log(filtered_countries)
-    //             }
-                
-    //             var country_tags = d3.select(".country-tag-container").selectAll(".tag").data(active_tags['country'], d=> d);
-    //             country_tags.exit().remove();
-    //             var country_tags_enter = country_tags.enter()
-    //                 .insert("span","#input-country")
-    //                 .attr("class","tag")
-    //                 .style("background", "#e0e0e0")
-    //                 .style("padding", "5px 8px")
-    //                 .style("border-radius", "3px")
-    //                 .style("display", "inline-flex")
-    //                 .style("align-items", "center")
-    //                 .style("font-family","sans-serif")
-    //                 .style("gap", "5px");
-    //             country_tags_enter.append("span").text(d => d)
-    //             country_tags_enter.append("span").html("&times;")
-    //                 .style("cursor", "pointer")
-    //                 .style("font-weight", "bold")
-    //                 .on("click", function(event, d) {
-    //                     active_tags['country'] = active_tags['country'].filter(tag => tag !== d);
-    //                     update_country();
-    //                     update_clubs()
-    //                 });
-    //             d3.select("#input-country").on("input", function() {
-    //                 const value = this.value.trim();
-    //                 const options = Array.from(document.querySelectorAll("#datalist-country option")).map(o => o.value);
-
-    //                 // If item matches datalist and isn't already a tag, add it
-    //                 if (options.includes(value) && !active_tags['country'].includes(value)) {
-    //                 active_tags['country'].push(value);
-    //                 this.value = ""; // Clear input for next selection
-    //                 update_country();
-    //                 update_clubs();
-    //                 }
-    //             });                
-
-    //         }
-
-    //         function update_clubs() {
-    //             var datalist = d3.select("#datalist-club").selectAll("option")
-    //             //.data(club_name_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
-    //             datalist.remove()
-    //             if(active_tags['country'].length == 0 ) {
-    //                 datalist =  d3.select("#datalist-club").selectAll("option").data(club_name_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
-    //             } else {
-    //                 var filtered_club_names = []
-    //                 // filter by region, then update filtered countries.
-    //                 var filtered_country = new Map([...club_country_map.entries()].filter(([key, value]) => active_tags['country'].includes(key)))
-    //                 filtered_country.entries().toArray().forEach((d) => {
-    //                     filtered_club_names.push(...d[1].keys())
-    //                     //console.log(d)
-    //                 })
-                    
-    //                 datalist =  d3.select("#datalist-club").selectAll("option").data(filtered_club_names).enter().append("option").text(d => d).attr("value", d=>d)
-    //                 //console.log(filtered_countries)
-    //             }                
-    //             var club_tags = d3.select(".club-tag-container").selectAll(".tag").data(active_tags['club'], d=> d);
-    //             club_tags.exit().remove();
-    //             var club_tags_enter = club_tags.enter()
-    //                 .insert("span","#input-club")
-    //                 .attr("class","tag")
-    //                 .style("background", "#e0e0e0")
-    //                 .style("padding", "5px 8px")
-    //                 .style("border-radius", "3px")
-    //                 .style("display", "inline-flex")
-    //                 .style("align-items", "center")
-    //                 .style("font-family","sans-serif")
-    //                 .style("gap", "5px");
-    //             club_tags_enter.append("span").text(d => d)
-    //             club_tags_enter.append("span").html("&times;")
-    //                 .style("cursor", "pointer")
-    //                 .style("font-weight", "bold")
-    //                 .on("click", function(event, d) {
-    //                     active_tags['club'] = active_tags['club'].filter(tag => tag !== d);
-    //                     update_clubs();
-    //                     update_players();
-    //                 });
-    //             d3.select("#input-club").on("input", function() {
-    //                 const value = this.value.trim();
-    //                 const options = Array.from(document.querySelectorAll("#datalist-club option")).map(o => o.value);
-
-    //                 // If item matches datalist and isn't already a tag, add it
-    //                 if (options.includes(value) && !active_tags['club'].includes(value)) {
-    //                 active_tags['club'].push(value);
-    //                 this.value = ""; // Clear input for next selection
-    //                 update_clubs();
-    //                 update_players();
-    //                 }
-    //             });                              
-
-    //         }
-
-    //         function update_players() {
-    //             var datalist = d3.select("#datalist-player").selectAll("option")
-    //             datalist.remove();
-    //             //.data(player_names_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
-
-    //             if(active_tags['club'].length == 0 ) {
-    //                 datalist =  d3.select("#datalist-player").selectAll("option").data(player_names_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
-    //             } else {
-    //                 var filtered_player_names = []
-    //                 // filter by region, then update filtered countries.
-    //                 var filtered_club = new Map([...club_name_map.entries()].filter(([key, value]) => active_tags['club'].includes(key)))
-    //                 filtered_club.entries().toArray().forEach((d) => {
-    //                     filtered_player_names.push(...d[1].keys())
-    //                     console.log(d)
-    //                 })
-                    
-    //                 datalist =  d3.select("#datalist-player").selectAll("option").data(filtered_player_names).enter().append("option").text(d => d).attr("value", d=>d)
-    //                 //console.log(filtered_countries)
-    //             }                 
-    //             var player_tags = d3.select(".player-tag-container").selectAll(".tag").data(active_tags['player'], d=> d);
-    //             player_tags.exit().remove();
-    //             var player_tags_enter = player_tags.enter()
-    //                 .insert("span","#input-player")
-    //                 .attr("class","tag")
-    //                 .style("background", "#e0e0e0")
-    //                 .style("padding", "5px 8px")
-    //                 .style("border-radius", "3px")
-    //                 .style("display", "inline-flex")
-    //                 .style("align-items", "center")
-    //                 .style("font-family","sans-serif")
-    //                 .style("gap", "5px");
-    //             player_tags_enter.append("span").text(d => d)
-    //             player_tags_enter.append("span").html("&times;")
-    //                 .style("cursor", "pointer")
-    //                 .style("font-weight", "bold")
-    //                 .on("click", function(event, d) {
-    //                     active_tags['player'] = active_tags['player'].filter(tag => tag !== d);
-    //                     update_players();
-    //                 });
-    //             d3.select("#input-player").on("input", function() {
-    //                 const value = this.value.trim();
-    //                 const options = Array.from(document.querySelectorAll("#datalist-player option")).map(o => o.value);
-
-    //                 // If item matches datalist and isn't already a tag, add it
-    //                 if (options.includes(value) && !active_tags['player'].includes(value)) {
-    //                 active_tags['player'].push(value);
-    //                 this.value = ""; // Clear input for next selection
-    //                 update_players();
-    //                 }
-    //             });
-
-    //         }
-
-
-    //     update_region();
-    //     update_country();
-    //     update_clubs();
-    //     update_players()
-
-    //     })
-
-    // }
-
-
-    //     populate_explore_page()
-
-</script>
+</body>

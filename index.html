@@ -194,6 +194,9 @@
     
     var canvas_top =  d3.select("#graphCanvas").node().getBoundingClientRect()
 
+    function reset_explore_filters() {
+        populate_explore_page();
+    }
 
     // This section is for dynamic data population for explore page.
 
@@ -207,7 +210,7 @@
             var active_fifa_code_tags = []
             function update_teams() {
                 
-                var datalist = d3.select("#datalist-fifa-code").selectAll("option").data(data).enter().append("option").text(d => d.team_name).attr("value", d=>d.fifa_code)
+                var datalist = d3.select("#datalist-fifa-code").selectAll("option").data(data.sort((a,b) => a.team_name.localeCompare(b.team_name))).enter().append("option").text(d => d.team_name).attr("value", d=>d.fifa_code)
                 var fifa_code_tags = d3.select(".fifa-code-tag-container").selectAll(".tag").data(active_fifa_code_tags, d=> d);
                 fifa_code_tags.exit().remove();
                 var fifa_code_tags_enter = fifa_code_tags.enter()
@@ -220,7 +223,7 @@
                     .style("align-items", "center")
                     .style("gap", "5px");
                 fifa_code_tags_enter.append("span").attr("class","wcteam-tag").text(d => d)
-                fifa_code_tags_enter.append("span").html("&times;")
+                fifa_code_tags_enter.append("span").attr("class","cross-tag").html("&times;")
                     .style("cursor", "pointer")
                     .style("font-weight", "bold")
                     .on("click", function(event, d) {
@@ -316,7 +319,7 @@
                     .style("font-family","sans-serif")
                     .style("gap", "5px");
                 region_tags_enter.append("span").attr("class", "region-tag").text(d => d)
-                region_tags_enter.append("span").html("&times;")
+                region_tags_enter.append("span").attr("class","cross-tag").html("&times;")
                     .style("cursor", "pointer")
                     .style("font-weight", "bold")
                     .on("click", function(event, d) {
@@ -345,7 +348,7 @@
                 var datalist =  d3.select("#datalist-country").selectAll("option");
                 datalist.remove();
                 if(active_tags['region'].length == 0 ) {
-                    datalist =  d3.select("#datalist-country").selectAll("option").data(club_country_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
+                    datalist =  d3.select("#datalist-country").selectAll("option").data(club_country_map.keys().toArray().sort((a,b) => a.localeCompare(b))).enter().append("option").text(d => d).attr("value", d=>d)
                 } else {
                     var filtered_countries = []
                     // filter by region, then update filtered countries.
@@ -355,7 +358,7 @@
                         //console.log(d)
                     })
                     
-                    datalist =  d3.select("#datalist-country").selectAll("option").data(filtered_countries).enter().append("option").text(d => d).attr("value", d=>d)
+                    datalist =  d3.select("#datalist-country").selectAll("option").data(filtered_countries.sort((a,b) => a.localeCompare(b))).enter().append("option").text(d => d).attr("value", d=>d)
                     //console.log(filtered_countries)
                 }
                 
@@ -372,7 +375,7 @@
                     .style("font-family","sans-serif")
                     .style("gap", "5px");
                 country_tags_enter.append("span").attr("class", "country-tag").text(d => d)
-                country_tags_enter.append("span").html("&times;")
+                country_tags_enter.append("span").attr("class","cross-tag").html("&times;")
                     .style("cursor", "pointer")
                     .style("font-weight", "bold")
                     .on("click", function(event, d) {
@@ -400,7 +403,7 @@
                 //.data(club_name_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
                 datalist.remove()
                 if(active_tags['country'].length == 0 ) {
-                    datalist =  d3.select("#datalist-club").selectAll("option").data(club_name_map.keys()).enter().append("option").text(d => d).attr("value", d=>d)
+                    datalist =  d3.select("#datalist-club").selectAll("option").data(club_name_map.keys().toArray().sort((a,b) => a.localeCompare(b))).enter().append("option").text(d => d).attr("value", d=>d)
                 } else {
                     var filtered_club_names = []
                     // filter by region, then update filtered countries.
@@ -410,7 +413,7 @@
                         //console.log(d)
                     })
                     
-                    datalist =  d3.select("#datalist-club").selectAll("option").data(filtered_club_names).enter().append("option").text(d => d).attr("value", d=>d)
+                    datalist =  d3.select("#datalist-club").selectAll("option").data(filtered_club_names.sort((a,b) => a.localeCompare(b))).enter().append("option").text(d => d).attr("value", d=>d)
                     //console.log(filtered_countries)
                 }                
                 var club_tags = d3.select(".club-tag-container").selectAll(".tag").data(active_tags['club'], d=> d);
@@ -426,7 +429,7 @@
                     .style("font-family","sans-serif")
                     .style("gap", "5px");
                 club_tags_enter.append("span").attr("class", "club-tag").text(d => d)
-                club_tags_enter.append("span").html("&times;")
+                club_tags_enter.append("span").attr("class","cross-tag").html("&times;")
                     .style("cursor", "pointer")
                     .style("font-weight", "bold")
                     .on("click", function(event, d) {
@@ -481,7 +484,7 @@
                     .style("font-family","sans-serif")
                     .style("gap", "5px");
                 player_tags_enter.append("span").attr("class", "player-tag").text(d => d)
-                player_tags_enter.append("span").html("&times;")
+                player_tags_enter.append("span").attr("class","cross-tag").html("&times;")
                     .style("cursor", "pointer")
                     .style("font-weight", "bold")
                     .on("click", function(event, d) {
@@ -517,17 +520,20 @@
     populate_explore_page()
 
     function explore_update_chart() {
-         var region = d3.select(".region-tag").value ;
-         var country = d3.select("#input-country").value ;
-         var club = d3.select("#input-club").value ;
-         var player = d3.select("#input-player").value ;
 
-         console.log(region)
-         console.log(country)
-        console.log(club)
-        console.log(player)
+        /**
+         *  Update chart process: 
+         *      - Player is the finest grain filter to have, if a player is selected - only filter by the name
+         *      - If no players are selected, then check club - 2nd finest grain to be selected.
+         *      - Next is country, then region. if none of them are selected - no updates are done.
+         *      - Modes to pass to draw bubble chart
+         *          - Mode = "explore_adhoc"
+         *          - Filter by mode takes care of the data filtering logic.
+         * 
+         * */
 
-        return false;
+        draw_bubble_chart({"mode": "explore_adhoc"})
+         return false;
 
     }
 
@@ -805,6 +811,14 @@
         });    
     }
 
+    /**
+     *  Function Name: filter_by_mode
+     *  Filter By mode - filters out the data based on mode of operation
+     *  Filter By Region: Only selects a slice of data based on certain Club Region.
+     *  Filter By country: Only selects a slice of data based on certain Club's country.
+     *  Filter by Fifa Code: Only selects a slice of data based on World Cup team country
+     *  Adhoc filter (explore_adhoc): Ability to filter either by player, club's country or region (multi choice enabled.)
+     * */
     function filter_by_mode(mode, data_tmp) {
         var return_data = [];
         if(mode['mode'] == "filter_by_region" && mode['region_name'] != 'All Regions') {
@@ -822,7 +836,7 @@
                     if(mode['show_all_clubs']) { top_teams_count = 25;}
                     return_data = data_tmp
 
-                } else if (mode['mode'] == "filter_by_country") {
+        } else if (mode['mode'] == "filter_by_country") {
             if(mode['show_all_clubs']) { top_teams_count = 450}
             if(mode['show_all_players']) { num_of_top_players_visible = 100; }
             data_tmp.forEach((d,i) => {
@@ -835,7 +849,6 @@
         } 
         else if (mode['mode'] == "filter_by_fifa_code") {
             list_fifa_code = d3.selectAll(".wcteam-tag").nodes().map(n => n.textContent)
-            console.log(list_fifa_code)
             if(list_fifa_code.length > 0) {
                 data_tmp.forEach((d,i) => {
                     if(list_fifa_code.includes(d.teams_fifa_code)) {
@@ -847,6 +860,42 @@
                 return_data = data_tmp
             }
             
+
+        }
+        else if (mode['mode'] == "explore_adhoc") {
+            // Fine Grain filtering hierarchy
+            // Player -> Club Name -> Club's Country  -> Club Region
+            num_of_top_players_visible = 1000;
+            top_teams_count = 300;
+            filter_option = [
+                {"tag_name": ".player-tag", "column_name_reference": "player_name"},
+                {"tag_name": ".club-tag", "column_name_reference": "club_team"},
+                {"tag_name": ".country-tag", "column_name_reference": "club_country_name"},
+                {"tag_name": ".region-tag", "column_name_reference": "club_region"},
+            ]
+            var filtered_data = false;
+            for(var i=0; i<filter_option.length; i++) {
+                var d = filter_option[i] ;
+                var array_values = d3.selectAll(d["tag_name"]).nodes().map(n => n.textContent);
+                
+                if(array_values.length > 0) {
+                    data_tmp.forEach((dd,i) => {
+                        if(array_values.includes(dd[d['column_name_reference']])) {
+                            return_data.push(dd)
+                        }
+                    })
+                    
+                    //return return_data;
+                    filtered_data = true
+                    break;
+
+                }
+
+            }
+
+            // if none are found.
+            if(! filtered_data) { return_data = data_tmp}
+
 
         }
         else {
