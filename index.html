@@ -196,6 +196,8 @@
 
     function reset_explore_filters() {
         populate_explore_page();
+        reset_elements();
+        draw_bubble_chart() ;
     }
 
     // This section is for dynamic data population for explore page.
@@ -545,8 +547,8 @@
      * 
      * */
     function reset_elements() {
-            var top_teams_count = 25;
-        var num_of_top_players_visible = 20;
+            top_teams_count = 25;
+            num_of_top_players_visible = 50;
 
             var club_lines = d3.selectAll("line")
             club_lines
