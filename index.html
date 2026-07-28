@@ -41,6 +41,19 @@
     * A number of non-ascii names needed to be remapped manually.
     * 
     **/
+    var WorldCupTeamData,WorldCupPlayerStatData
+    async function load_data() {
+        WorldCupTeamData = await d3.csv("WorldCupTeams.csv")
+        WorldCupPlayerStatData = await d3.csv("WorldCupPlayerStats.csv")
+
+        start_chart() ;
+
+    }
+
+
+
+
+    
 
 
     // -- Visualization Parameters --
@@ -200,6 +213,14 @@
         draw_bubble_chart() ;
     }
 
+    // Load data to be used later by various functions
+    
+
+
+
+    
+
+
     // This section is for dynamic data population for explore page.
 
     function populate_explore_page() {
@@ -208,11 +229,11 @@
                 // <div class="tag-container"  id="dropdown-fifa-code" style="border: 1px solid #ccc; padding: 5px; display: inline-flex; flex-wrap: wrap; gap: 5px; min-width: 300px;"></div>
                 //   <input type="text" id="input-fifa-code" list="tag-options" placeholder="Type or select..." style="border: none; outline: none; flex-grow: 1;" />
                 //   <datalist id="datalist-fifa-code"></datalist>        
-        var wc_teams = d3.csv("WorldCupTeams.csv").then(function(data) {
+        //var wc_teams = d3.csv("WorldCupTeams.csv").then(function(data) {
             var active_fifa_code_tags = []
             function update_teams() {
                 
-                var datalist = d3.select("#datalist-fifa-code").selectAll("option").data(data.sort((a,b) => a.team_name.localeCompare(b.team_name))).enter().append("option").text(d => d.team_name).attr("value", d=>d.fifa_code)
+                var datalist = d3.select("#datalist-fifa-code").selectAll("option").data(WorldCupTeamData.sort((a,b) => a.team_name.localeCompare(b.team_name))).enter().append("option").text(d => d.team_name).attr("value", d=>d.fifa_code)
                 var fifa_code_tags = d3.select(".fifa-code-tag-container").selectAll(".tag").data(active_fifa_code_tags, d=> d);
                 fifa_code_tags.exit().remove();
                 var fifa_code_tags_enter = fifa_code_tags.enter()
@@ -268,8 +289,12 @@
                 });
         }
         update_teams()
-        });
-        var wc_data = d3.csv("WorldCupPlayerStats.csv").then(function(data_tmp) {
+        //});
+
+
+
+
+        //var wc_data = d3.csv("WorldCupPlayerStats.csv").then(function(data_tmp) {
             var club_region_map = new Map();
             var club_country_map = new Map();
             var club_name_map = new Map();
@@ -281,7 +306,7 @@
                 "player": []
             }
 
-            data_tmp.forEach((d) => {
+            WorldCupPlayerStatData.forEach((d) => {
                 if(!club_region_map.has(d.club_region)) {
                     club_region_map.set(d.club_region, new Map())
                 }
@@ -513,13 +538,13 @@
         update_clubs();
         update_players()
 
-        })
+        //})
 
     }
 
 
 
-    populate_explore_page()
+    
 
     function explore_update_chart() {
 
@@ -711,9 +736,9 @@
 
     function draw_worldcup_teams() {
         graphCanvas.exit().remove()
-        var wc_teams = d3.csv("WorldCupTeams.csv").then(function(data) {
+        //var wc_teams = d3.csv("WorldCupTeams.csv").then(function(data) {
 
-            var total_teams = data.length;
+            var total_teams = WorldCupTeamData.length;
             var angle_per_team = 2 * Math.PI / total_teams;
 
             // Draw Teams on top and bottom of rectangle area.
@@ -724,7 +749,7 @@
 
 
             var teams_canvas = top_team_canvas.selectAll("g")
-                .data(data)
+                .data(WorldCupTeamData)
                 .enter()
                 .append("g")
                 .attr("transform", function(d,i) { 
@@ -810,7 +835,7 @@
 
 
 
-        });    
+        //});    
     }
 
     /**
@@ -933,7 +958,7 @@
         var total_clubs = 0
         
         
-        var wc_data = d3.csv("WorldCupPlayerStats.csv").then(function(data_tmp) {
+        //var wc_data = d3.csv("WorldCupPlayerStats.csv").then(function(data_tmp) {
 
 
             // Filter Data based on the mode of operation
@@ -942,9 +967,9 @@
             // if mode is explore mode, then depends on what is filtered. update the chart.
 
             var data ;
-            if(mode == undefined) { data = data_tmp}
+            if(mode == undefined) { data = WorldCupPlayerStatData}
             else { 
-                    data = filter_by_mode(mode, data_tmp); 
+                    data = filter_by_mode(mode, WorldCupPlayerStatData); 
                     
                 }
 
@@ -1436,7 +1461,7 @@
 
 
                 
-        });
+        //});
         d3.selectAll("line").lower();
         d3.selectAll("g[fifa_code]").raise();
 
@@ -1450,7 +1475,7 @@
     current_id = 0
     narrative_texts = ["slide1.html","slide2.html","argvsspain.html","explore.html"]
     page_arrow_texts = [[undefined,"The First Question!"],["Home","Argentina Vs Spain"],["The First Question!","Explore..."],["Argentina Vs Spain", undefined]]
-        async function populate_narrative_text(slide_num) {
+    async function populate_narrative_text(slide_num) {
             // reset
             top_teams_count = 25;
             reset_elements()
@@ -1503,10 +1528,14 @@
 
 
 
+    function start_chart()  {
+        populate_explore_page()
+        populate_narrative_text(0);
+        draw_worldcup_teams();
+        draw_bubble_chart();
+    }
 
-    populate_narrative_text(0);
-    draw_worldcup_teams();
-    draw_bubble_chart();
+    load_data() ;
 </script>
 
 </script>
