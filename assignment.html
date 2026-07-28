@@ -102,12 +102,13 @@
     // Define federation colors and names - using pastel colors for better visibility
     // These values are static as there are only these soccer federations in the word.
     var federation_colors = {
-        "AFC": "#E0d4e7", // Purple
         "CAF": "#F49595", // Red
+        "AFC": "#E0d4e7", // Purple
+        "UEFA": "#b0b5ed", // Blue        
         "CONCACAF": "#A9e4de", // Green
-        "CONMEBOL": "#f3d17c", // Orange
-        "OFC": "#d3d6ce",  // Brown
-        "UEFA": "#b0b5ed" // Blue        
+        "OFC": "#d3d6ce",  // Brown        
+        "CONMEBOL": "#f3d17c" // Orange
+
         
     };
     var federation_names = {
@@ -749,7 +750,7 @@
 
 
             var teams_canvas = top_team_canvas.selectAll("g")
-                .data(WorldCupTeamData)
+                .data(WorldCupTeamData.sort((a,b) => a.region.localeCompare(b.region)))
                 .enter()
                 .append("g")
                 .attr("transform", function(d,i) { 
