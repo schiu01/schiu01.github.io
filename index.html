@@ -727,7 +727,9 @@
         return false;
     }
 
-    function filter_chart_by_region(region_name) {
+    function filter_chart_by_region(region_name, object) {
+        
+        object.style.backgroundColor = "#FFAAAA"
         draw_bubble_chart({"mode": "filter_by_region", "region_name": region_name,"show_all_clubs": true})
         return false;
 
