@@ -573,8 +573,17 @@
      * 
      * */
     function reset_elements() {
-            top_teams_count = 25;
-            num_of_top_players_visible = 50;
+            if(current_slide_name == "argvsspain.html") {
+            top_teams_count = 500;
+            num_of_top_players_visible = 2000;
+
+                // redraw chart
+                draw_bubble_chart();
+                activate_by_fifa_code(['ARG','ESP']);
+
+
+            } else {
+
 
             var club_lines = d3.selectAll("line")
             club_lines
@@ -595,6 +604,12 @@
 
             d3.selectAll("line[fifa_code]")
                 .style("visibility","visible")
+
+        
+            
+            }
+
+            
             
     }
     
@@ -870,7 +885,7 @@
             if(mode['show_all_clubs']) { top_teams_count = 450}
             if(mode['show_all_players']) { num_of_top_players_visible = 100; }
             data_tmp.forEach((d,i) => {
-                if(d.teams_fifa_code == mode['fifa_code']) {
+                if(mode['fifa_code'].includes(d.teams_fifa_code)) {
                     return_data.push(d)
                 }
             })
@@ -1475,14 +1490,23 @@
     // populate the narrative texts
     // The slides are stored in slideX.html where X = 1,2,3 slide numbers
     // these are dynamically loaded
-    current_id = 0
+    current_slide_name = ""
     narrative_texts = ["slide1.html","slide2.html","argvsspain.html","explore.html"]
     page_arrow_texts = [[undefined,"The First Question!"],["Home","Argentina Vs Spain"],["The First Question!","Explore..."],["Argentina Vs Spain", undefined]]
     async function populate_narrative_text(slide_num) {
             // reset
             top_teams_count = 25;
+            current_slide_name = narrative_texts[slide_num];
             reset_elements()
+            if(slide_num == 2) {
+                num_of_top_players_visible = 1000;
+                top_teams_count = 200;
+                draw_bubble_chart({"mode": "filter_by_country", "fifa_code": ['ARG','ESP'],"show_all_clubs": true, "show_all_players": true})
+            } else {
             draw_bubble_chart()
+            }
+
+            
             slide_name = narrative_texts[slide_num] ;
             var narrative_html = await d3.html(slide_name)
             test_html = narrative_html;
